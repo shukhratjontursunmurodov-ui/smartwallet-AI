@@ -15,8 +15,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
   const { t } = useLanguage();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 max-w-md mx-auto px-4 pb-4 pt-1 pointer-events-none">
-      <div className="bg-[#173404] text-white rounded-full shadow-2xl p-2 flex items-center justify-around border border-[#295609] pointer-events-auto backdrop-blur-md">
+    <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden px-4 pb-4 pt-1 pointer-events-none">
+      <div className="bg-[#173404] text-white rounded-full shadow-2xl p-2 flex items-center justify-around border border-[#295609] pointer-events-auto backdrop-blur-md max-w-md mx-auto">
         {/* Home */}
         <button
           onClick={() => setActiveTab('home')}

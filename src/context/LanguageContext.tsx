@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Currency, Language } from '@/lib/types';
+import { formatAmount } from '@/lib/formatAmount';
 import enTranslations from '@/locales/en.json';
 import uzTranslations from '@/locales/uz.json';
 
@@ -56,7 +57,6 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (current && typeof current === 'object' && key in current) {
         current = current[key];
       } else {
-        // Fallback to English if translation is missing
         let fallback: any = translations.en;
         for (const k of keys) {
           if (fallback && typeof fallback === 'object' && k in fallback) {
@@ -81,13 +81,9 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return current;
   };
 
+  // Uses the single shared formatAmount utility everywhere
   const formatCurrency = (amount: number): string => {
-    if (isNaN(amount)) amount = 0;
-    if (currency === 'KRW') {
-      return `₩${Math.round(amount).toLocaleString('en-US')}`;
-    } else {
-      return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
+    return formatAmount(amount, currency);
   };
 
   return (
