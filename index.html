@@ -278,7 +278,15 @@
 
       const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
       const balanceRemaining = cycle ? cycle.totalAmount - totalSpent : 0;
-      const daysRemaining = cycle ? Math.max(1, cycle.days) : 30;
+      // Live days remaining: cycle end date (startDate + total days) minus today
+      const daysRemaining = cycle ? (() => {
+        const cycleStart = new Date(cycle.startDate);
+        const cycleEnd = new Date(cycleStart.getTime() + cycle.days * 24 * 60 * 60 * 1000);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const remaining = Math.ceil((cycleEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        return Math.max(1, remaining);
+      })() : 30;
       const dailySafeLimit = Math.max(0, balanceRemaining / daysRemaining);
 
       const handleStartCycle = (e) => {
