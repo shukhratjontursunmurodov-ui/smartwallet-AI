@@ -1,0 +1,78 @@
+{
+  "appName": "SmartWallet AI",
+  "tagline": "Kunlik xavfsiz xarajat ko'rsatgichingiz",
+  "hero": {
+    "dailySafeSpend": "Bugun sarflashingiz mumkin",
+    "todayLabel": "bugun",
+    "daysLeft": "tsiklda qolgan kunlar",
+    "dayLeft": "tsiklda qolgan kun",
+    "totalBalance": "Qolgan balansi",
+    "cycleBudget": "Tsikl byudjeti",
+    "spentSoFar": "Shu paytgacha sarflandi",
+    "streakDays": "{count} kunlik ketma-ketlik",
+    "streakDaysPlural": "{count} kunlik ketma-ketlik",
+    "withinBudget": "Limit ichida 🔥"
+  },
+  "cycleSetup": {
+    "title": "Yangi Byudjet Tsiklini Boshlash",
+    "blockingPrompt": "Kunlik xavfsiz xarajat limitini aniqlash uchun ushbu tsikl uchun qancha mablag'ingiz borligini kiriting.",
+    "amountLabel": "Ushbu tsikl uchun qancha pulingiz bor?",
+    "amountPlaceholder": "masalan, 600,000",
+    "durationLabel": "Tsikl davomiyligi (Kunlar)",
+    "startDateLabel": "Boshlanish sanasi",
+    "startDateDesc": "Bugundan boshlanadi. Moslashuvchan vaqt.",
+    "confirmButton": "Tsiklni Boshlash",
+    "activeCycleWarning": "Yangi tsikl boshlansa, joriy tsikl arxivlanadi."
+  },
+  "expense": {
+    "addTitle": "Xarajatni Tezkor Kiritish",
+    "amountLabel": "Sarflangan summa",
+    "categoryLabel": "Kategoriyani tanlang",
+    "noteLabel": "Eslatma (Ixtiyoriy)",
+    "notePlaceholder": "masalan, Do'stlar bilan tushlik, Yo'l chiptasi...",
+    "saveButton": "Xarajatni Saqlash",
+    "quickAddHeader": "Yangi Xarajat Kiritish"
+  },
+  "analytics": {
+    "title": "Haftalik Umumiy Ko'rinish",
+    "spendingByDay": "Kunlik Xarajatlar Grafigi",
+    "categoryBreakdown": "Kategoriyalar Bo'yicha Tahlil",
+    "recentExpenses": "So'nggi Xarajatlar",
+    "noExpenses": "Ushbu tsikl uchun hali xarajatlar kiritilmadi.",
+    "topCategory": "Eng Ko'p Sarflangan"
+  },
+  "nav": {
+    "home": "Asosiy",
+    "analytics": "Tahlil",
+    "categories": "Kategoriyalar",
+    "profile": "Profil",
+    "addExpense": "Xarajat Kiritish"
+  },
+  "settings": {
+    "title": "Profil va Sozlamalar",
+    "currencyLabel": "Tanlangan Valyuta",
+    "languageLabel": "Ilova Tili",
+    "account": "Hisob",
+    "signOut": "Chiqish",
+    "demoUser": "Talaba Demo Rejimi",
+    "resetCycle": "Joriy Tsiklni Qayta Sozlash"
+  },
+  "categories": {
+    "utensils": "Ovqat va Restoranlar",
+    "bus": "Transport",
+    "book-open": "O'qish va Kitoblar",
+    "gamepad-2": "Kengayish va O'yinlar",
+    "shopping-bag": "Xaridlar",
+    "receipt": "Kommunal va To'lovlar",
+    "sparkles": "Shaxsiy Parvarish",
+    "more-horizontal": "Boshqa"
+  },
+  "auth": {
+    "signInTitle": "SmartWallet AI ga xush kelibsiz",
+    "emailLabel": "Email manzili",
+    "passwordLabel": "Parol",
+    "signInButton": "Supabase orqali kirish",
+    "demoButton": "Demo rejimida davom etish",
+    "or": "yoki"
+  }
+}

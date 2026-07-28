@@ -1,0 +1,78 @@
+{
+  "appName": "SmartWallet AI",
+  "tagline": "Your daily safe spending guide",
+  "hero": {
+    "dailySafeSpend": "You can spend",
+    "todayLabel": "today",
+    "daysLeft": "days left in cycle",
+    "dayLeft": "day left in cycle",
+    "totalBalance": "Balance Remaining",
+    "cycleBudget": "Cycle Total",
+    "spentSoFar": "Spent so far",
+    "streakDays": "{count} day streak",
+    "streakDaysPlural": "{count} days streak",
+    "withinBudget": "Within limit 🔥"
+  },
+  "cycleSetup": {
+    "title": "Start New Budget Cycle",
+    "blockingPrompt": "Enter how much you have for this cycle to unlock your daily safe spend limit.",
+    "amountLabel": "How much money do you have for this cycle?",
+    "amountPlaceholder": "e.g. 600,000",
+    "durationLabel": "Cycle Duration (Days)",
+    "startDateLabel": "Start Date",
+    "startDateDesc": "Defaults to today. Custom flexible start.",
+    "confirmButton": "Start Budget Cycle",
+    "activeCycleWarning": "Starting a new cycle will archive your current cycle."
+  },
+  "expense": {
+    "addTitle": "Quick Expense Log",
+    "amountLabel": "Amount Spent",
+    "categoryLabel": "Select Category",
+    "noteLabel": "Note (Optional)",
+    "notePlaceholder": "e.g. Lunch with friends, bus card refill...",
+    "saveButton": "Log Expense",
+    "quickAddHeader": "Log New Expense"
+  },
+  "analytics": {
+    "title": "Weekly Overview",
+    "spendingByDay": "Daily Spend Sparkline",
+    "categoryBreakdown": "Category Breakdown",
+    "recentExpenses": "Recent Expenses",
+    "noExpenses": "No expenses logged for this cycle yet.",
+    "topCategory": "Top Spending"
+  },
+  "nav": {
+    "home": "Home",
+    "analytics": "Analytics",
+    "categories": "Categories",
+    "profile": "Profile",
+    "addExpense": "Add Expense"
+  },
+  "settings": {
+    "title": "Profile & Settings",
+    "currencyLabel": "Preferred Currency",
+    "languageLabel": "App Language",
+    "account": "Account",
+    "signOut": "Sign Out",
+    "demoUser": "Student Demo Mode",
+    "resetCycle": "Reset Current Cycle"
+  },
+  "categories": {
+    "utensils": "Food & Dining",
+    "bus": "Transport",
+    "book-open": "Study & Books",
+    "gamepad-2": "Entertainment",
+    "shopping-bag": "Shopping",
+    "receipt": "Bills & Utilities",
+    "sparkles": "Personal Care",
+    "more-horizontal": "Miscellaneous"
+  },
+  "auth": {
+    "signInTitle": "Welcome back to SmartWallet AI",
+    "emailLabel": "Email address",
+    "passwordLabel": "Password",
+    "signInButton": "Sign In with Supabase",
+    "demoButton": "Continue with Demo Mode",
+    "or": "or"
+  }
+}
