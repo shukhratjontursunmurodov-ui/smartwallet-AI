@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Category, Cycle, Expense, Streak } from '@/lib/types';
-import { supabase } from '@/lib/supabaseClient';
+import { formatAmount } from '@/lib/formatAmount';
 
 const PRESET_CATEGORIES: Category[] = [
   { id: 'cat-1', name: 'Food & Dining', icon: 'utensils', is_custom: false },
@@ -17,6 +17,7 @@ const PRESET_CATEGORIES: Category[] = [
 
 interface WalletContextType {
   activeCycle: Cycle | null;
+  cycleHistory: Cycle[];
   expenses: Expense[];
   categories: Category[];
   streak: Streak;
@@ -38,6 +39,7 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeCycle, setActiveCycle] = useState<Cycle | null>(null);
+  const [cycleHistory, setCycleHistory] = useState<Cycle[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories] = useState<Category[]>(PRESET_CATEGORIES);
   const [streak, setStreak] = useState<Streak>({
@@ -51,30 +53,41 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isCycleModalOpen, setIsCycleModalOpen] = useState<boolean>(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState<boolean>(false);
 
-  // Load initial state from LocalStorage or Supabase
+  // Load initial cycles & history from LocalStorage
   useEffect(() => {
+    const savedHistory = localStorage.getItem('smartwallet_cycle_history');
+    if (savedHistory) {
+      try {
+        setCycleHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        setCycleHistory([]);
+      }
+    }
+
     const savedCycle = localStorage.getItem('smartwallet_active_cycle');
     if (savedCycle) {
       try {
-        const parsed = JSON.parse(savedCycle);
-        // Check if cycle has expired
+        const parsed: Cycle = JSON.parse(savedCycle);
+        // Check if active cycle duration has elapsed
         const startDate = new Date(parsed.start_date);
         const today = new Date();
-        const diffTime = Math.abs(today.getTime() - startDate.getTime());
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const startMid = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+        const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-        if (diffDays >= parsed.cycle_length_days) {
-          // Cycle finished! Needs new cycle input
-          setActiveCycle(null);
-          setIsCycleModalOpen(true);
+        const elapsedDays = Math.floor((todayMid.getTime() - startMid.getTime()) / (1000 * 60 * 60 * 24));
+
+        if (elapsedDays >= parsed.cycle_length_days) {
+          // Cycle completed -> Archive active cycle & trigger blocking prompt for new cycle amount
+          archiveActiveCycle(parsed);
         } else {
           setActiveCycle(parsed);
         }
       } catch (e) {
         setActiveCycle(null);
+        setIsCycleModalOpen(true);
       }
     } else {
-      // First time or no active cycle -> Show blocking prompt
+      // First launch or no active cycle -> Show blocking setup prompt
       setIsCycleModalOpen(true);
     }
 
@@ -86,7 +99,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setExpenses([]);
       }
     } else {
-      // Seed initial demo expenses if desired
       const demoExpenses: Expense[] = [
         {
           id: 'exp-1',
@@ -108,16 +120,22 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setExpenses(demoExpenses);
       localStorage.setItem('smartwallet_expenses', JSON.stringify(demoExpenses));
     }
-
-    const savedStreak = localStorage.getItem('smartwallet_streak');
-    if (savedStreak) {
-      try {
-        setStreak(JSON.parse(savedStreak));
-      } catch (e) {}
-    }
   }, []);
 
-  // Save changes to localStorage
+  // Archive helper to move active cycle to history with is_active = false
+  const archiveActiveCycle = (currentCycle: Cycle) => {
+    const archivedCycle: Cycle = { ...currentCycle, is_active: false };
+    setActiveCycle(null);
+    setCycleHistory((prev) => [archivedCycle, ...prev]);
+    localStorage.removeItem('smartwallet_active_cycle');
+    localStorage.setItem(
+      'smartwallet_cycle_history',
+      JSON.stringify([archivedCycle, ...cycleHistory])
+    );
+    setIsCycleModalOpen(true);
+  };
+
+  // Sync activeCycle with localStorage
   useEffect(() => {
     if (activeCycle) {
       localStorage.setItem('smartwallet_active_cycle', JSON.stringify(activeCycle));
@@ -131,10 +149,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [expenses]);
 
   useEffect(() => {
-    localStorage.setItem('smartwallet_streak', JSON.stringify(streak));
-  }, [streak]);
+    localStorage.setItem('smartwallet_cycle_history', JSON.stringify(cycleHistory));
+  }, [cycleHistory]);
 
-  // Derived Safe-Spend Formula Calculations
+  // Derived Safe-Spend Limit Formula
+  // daily_limit = (cycle_total_amount - amount_spent_so_far) / days_remaining_in_cycle
   const calculateMetrics = () => {
     if (!activeCycle) {
       return {
@@ -145,7 +164,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       };
     }
 
-    // Filter expenses for current cycle
     const currentCycleExpenses = expenses.filter(
       (e) => e.cycle_id === activeCycle.id || activeCycle.id === 'demo-cycle'
     );
@@ -153,10 +171,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const totalSpent = currentCycleExpenses.reduce((sum, e) => sum + e.amount, 0);
     const balanceRemaining = activeCycle.total_amount - totalSpent;
 
-    // Calculate days remaining
     const start = new Date(activeCycle.start_date);
     const today = new Date();
-    // Normalize dates to midnight for clean day diff
     const startMid = new Date(start.getFullYear(), start.getMonth(), start.getDate());
     const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -166,8 +182,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
 
     const daysRemaining = Math.max(1, activeCycle.cycle_length_days - elapsedDays);
-
-    // Dynamic formula: daily_limit = (cycle_total_amount - amount_spent_so_far) / days_remaining_in_cycle
     const dailySafeLimit = Math.max(0, balanceRemaining / daysRemaining);
 
     return {
@@ -180,12 +194,19 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const { totalSpent, balanceRemaining, daysRemaining, dailySafeLimit } = calculateMetrics();
 
+  // Create a brand new cycle row with custom amount, custom days length, and flexible start date
   const startNewCycle = async (totalAmount: number, lengthDays: number, startDateStr?: string) => {
+    if (activeCycle) {
+      // Archive current cycle first
+      const archived: Cycle = { ...activeCycle, is_active: false };
+      setCycleHistory((prev) => [archived, ...prev]);
+    }
+
     const newCycle: Cycle = {
       id: `cycle-${Date.now()}`,
       user_id: 'user-demo',
       start_date: startDateStr || new Date().toISOString().split('T')[0],
-      cycle_length_days: lengthDays,
+      cycle_length_days: Math.max(1, lengthDays),
       total_amount: totalAmount,
       currency: 'KRW',
       is_active: true,
@@ -193,7 +214,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
 
     setActiveCycle(newCycle);
-    setExpenses([]); // Clear expenses for the new fresh cycle
+    setExpenses([]); // Fresh cycle expenses
     setIsCycleModalOpen(false);
   };
 
@@ -212,27 +233,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       created_at: new Date().toISOString(),
     };
 
-    const updatedExpenses = [newExpense, ...expenses];
-    setExpenses(updatedExpenses);
-
-    // Update streak if spent within today's daily limit
-    const todaySpent = updatedExpenses
-      .filter((e) => {
-        const eDate = new Date(e.created_at).toISOString().split('T')[0];
-        const todayDate = new Date().toISOString().split('T')[0];
-        return eDate === todayDate;
-      })
-      .reduce((sum, e) => sum + e.amount, 0);
-
-    if (todaySpent <= dailySafeLimit) {
-      const newStreakCount = streak.current_streak + 1;
-      setStreak((prev) => ({
-        ...prev,
-        current_streak: newStreakCount,
-        longest_streak: Math.max(prev.longest_streak, newStreakCount),
-        last_checked_date: new Date().toISOString().split('T')[0],
-      }));
-    }
+    setExpenses((prev) => [newExpense, ...prev]);
   };
 
   const deleteExpense = async (id: string) => {
@@ -240,6 +241,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const resetCurrentCycle = () => {
+    if (activeCycle) {
+      const archived: Cycle = { ...activeCycle, is_active: false };
+      setCycleHistory((prev) => [archived, ...prev]);
+    }
     setActiveCycle(null);
     setIsCycleModalOpen(true);
   };
@@ -248,6 +253,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     <WalletContext.Provider
       value={{
         activeCycle,
+        cycleHistory,
         expenses,
         categories,
         streak,
