@@ -215,11 +215,16 @@
       const [expCat, setExpCat] = useState('c1');
       const [expNote, setExpNote] = useState('');
 
-      // Analytics date-range picker state
-      const [analyticsStart, setAnalyticsStart] = useState(startDate);
-      const [analyticsEnd, setAnalyticsEnd] = useState(
-        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      );
+      // Compute cycle end date once — single source of truth for home + analytics
+      const cycleEndDate = cycle ? (() => {
+        const [y, m, d] = cycle.startDate.split('-').map(Number);
+        const end = new Date(y, m - 1, d + cycle.days);
+        return end.toISOString().split('T')[0];
+      })() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      // Analytics date-range picker — defaults to the active cycle's actual range
+      const [analyticsStart, setAnalyticsStart] = useState(cycle?.startDate || startDate);
+      const [analyticsEnd, setAnalyticsEnd] = useState(cycleEndDate);
 
       useEffect(() => { localStorage.setItem('sw_lang', lang); }, [lang]);
       useEffect(() => { localStorage.setItem('sw_curr', curr); }, [curr]);
@@ -278,14 +283,13 @@
 
       const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
       const balanceRemaining = cycle ? cycle.totalAmount - totalSpent : 0;
-      // Live days remaining: cycle end date (startDate + total days) minus today
+      // Days remaining — same cycleEndDate used by analytics, local-time safe
       const daysRemaining = cycle ? (() => {
-        const cycleStart = new Date(cycle.startDate);
-        const cycleEnd = new Date(cycleStart.getTime() + cycle.days * 24 * 60 * 60 * 1000);
+        const [ey, em, ed] = cycleEndDate.split('-').map(Number);
+        const end = new Date(ey, em - 1, ed);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const remaining = Math.ceil((cycleEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        return Math.max(1, remaining);
+        return Math.max(1, Math.ceil((end - today) / (1000 * 60 * 60 * 24)));
       })() : 30;
       const dailySafeLimit = Math.max(0, balanceRemaining / daysRemaining);
 
