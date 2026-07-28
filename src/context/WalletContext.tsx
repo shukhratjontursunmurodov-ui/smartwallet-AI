@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Category, Cycle, Expense, Streak, Currency } from '@/lib/types';
 
-const PRESET_CATEGORIES: Category[] = [
+const INITIAL_PRESET_CATEGORIES: Category[] = [
   { id: 'cat-1', name: 'Food & Dining', icon: 'utensils', is_custom: false },
   { id: 'cat-2', name: 'Transport', icon: 'bus', is_custom: false },
   { id: 'cat-3', name: 'Study & Books', icon: 'book-open', is_custom: false },
@@ -31,6 +31,7 @@ interface WalletContextType {
   startNewCycle: (totalAmount: number, lengthDays: number, startDate?: string, entryCurrency?: Currency) => Promise<void>;
   addExpense: (amount: number, categoryId: string, note?: string) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
+  addCustomCategory: (name: string, icon: string) => void;
   resetCurrentCycle: () => void;
 }
 
@@ -40,7 +41,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [activeCycle, setActiveCycle] = useState<Cycle | null>(null);
   const [cycleHistory, setCycleHistory] = useState<Cycle[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [categories] = useState<Category[]>(PRESET_CATEGORIES);
+  const [categories, setCategories] = useState<Category[]>(INITIAL_PRESET_CATEGORIES);
   const [streak, setStreak] = useState<Streak>({
     id: 'streak-1',
     user_id: 'user-demo',
@@ -53,6 +54,16 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
+    // Load custom & preset categories
+    const savedCategories = localStorage.getItem('smartwallet_categories');
+    if (savedCategories) {
+      try {
+        setCategories(JSON.parse(savedCategories));
+      } catch (e) {
+        setCategories(INITIAL_PRESET_CATEGORIES);
+      }
+    }
+
     const savedHistory = localStorage.getItem('smartwallet_cycle_history');
     if (savedHistory) {
       try {
@@ -145,6 +156,22 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.setItem('smartwallet_cycle_history', JSON.stringify(cycleHistory));
   }, [cycleHistory]);
 
+  useEffect(() => {
+    localStorage.setItem('smartwallet_categories', JSON.stringify(categories));
+  }, [categories]);
+
+  const addCustomCategory = (name: string, icon: string) => {
+    const newCat: Category = {
+      id: `cat-custom-${Date.now()}`,
+      name,
+      icon,
+      is_custom: true,
+    };
+    const updated = [...categories, newCat];
+    setCategories(updated);
+    localStorage.setItem('smartwallet_categories', JSON.stringify(updated));
+  };
+
   const calculateMetrics = () => {
     if (!activeCycle) {
       return {
@@ -185,7 +212,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const { totalSpent, balanceRemaining, daysRemaining, dailySafeLimit } = calculateMetrics();
 
-  // Stores the cycle with the exact entry currency selected at creation time (never overwrites stored amounts)
   const startNewCycle = async (
     totalAmount: number,
     lengthDays: number,
@@ -263,6 +289,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         startNewCycle,
         addExpense,
         deleteExpense,
+        addCustomCategory,
         resetCurrentCycle,
       }}
     >

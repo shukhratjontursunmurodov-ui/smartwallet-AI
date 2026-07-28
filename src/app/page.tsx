@@ -9,6 +9,8 @@ import { CycleSetupModal } from '@/components/CycleSetupModal';
 import { QuickAddExpenseModal } from '@/components/QuickAddExpenseModal';
 import { SparklineChart } from '@/components/SparklineChart';
 import { CategoryBreakdown } from '@/components/CategoryBreakdown';
+import { CategoriesView } from '@/components/CategoriesView';
+import { AnalyticsView } from '@/components/AnalyticsView';
 import { BottomNav } from '@/components/BottomNav';
 import { Sidebar } from '@/components/Sidebar';
 import { AuthModal } from '@/components/AuthModal';
@@ -191,21 +193,9 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {activeTab === 'analytics' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fadeIn">
-              <SparklineChart />
-              <CategoryBreakdown />
-            </div>
-          )}
+          {activeTab === 'analytics' && <AnalyticsView />}
 
-          {activeTab === 'categories' && (
-            <div className="max-w-2xl mx-auto space-y-4 animate-fadeIn">
-              <h2 className="text-lg font-bold text-[#173404]">
-                {t('nav.categories')}
-              </h2>
-              <CategoryBreakdown />
-            </div>
-          )}
+          {activeTab === 'categories' && <CategoriesView />}
 
           {activeTab === 'profile' && (
             <div className="max-w-2xl mx-auto space-y-5 animate-fadeIn">
@@ -234,7 +224,6 @@ export default function DashboardPage() {
               </div>
 
               <div className="bg-white rounded-[20px] p-5 shadow-sm border border-emerald-950/10 space-y-4">
-                {/* Live Currency Rate Status Info */}
                 <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                   <div className="flex items-center space-x-2">
                     <RefreshCcw className="w-4 h-4 text-[#90C749]" />
@@ -274,7 +263,7 @@ export default function DashboardPage() {
                       onClick={() => setCurrency('USD')}
                       className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                         currency === 'USD'
-                          ? 'bg-[#173404] text-white shadow-xs'
+                          ? 'bg-[#173404] text-[#173404] shadow-xs bg-[#173404] text-white'
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
