@@ -57,6 +57,63 @@
       return currency === 'KRW' ? `₩${formattedNumber}` : `$${formattedNumber}`;
     }
 
+    /**
+     * SINGLE SHARED FUNCTION — used by both Home and Analytics.
+     * Computes all cycle stats from the same logic, no duplication.
+     *
+     * @param {Object|null} cycle       - The active cycle object {startDate, days, totalAmount}
+     * @param {Array}        allExpenses - Full expenses array
+     * @param {string|null}  rangeStart  - Optional date filter start (YYYY-MM-DD). Null = use cycle start.
+     * @param {string|null}  rangeEnd    - Optional date filter end (YYYY-MM-DD). Null = use cycle end.
+     * @returns {Object} { totalSpent, balanceRemaining, daysInRange, daysRemaining, dailyLimit, avgDaily, cycleEndDate, filteredExpenses }
+     */
+    function getActiveCycleStats(cycle, allExpenses, rangeStart, rangeEnd) {
+      // Compute cycle end date from stored data (local-time safe)
+      let cycleEnd = null;
+      if (cycle) {
+        const [y, m, d] = cycle.startDate.split('-').map(Number);
+        cycleEnd = new Date(y, m - 1, d + cycle.days);
+      }
+      const cycleEndStr = cycleEnd ? cycleEnd.toISOString().split('T')[0] : null;
+
+      // Resolve the effective range
+      const effectiveStart = rangeStart || (cycle ? cycle.startDate : new Date().toISOString().split('T')[0]);
+      const effectiveEnd   = rangeEnd   || (cycleEndStr || new Date().toISOString().split('T')[0]);
+
+      // Filter expenses within the date range
+      const filteredExpenses = allExpenses.filter(exp => {
+        const d = exp.date ? exp.date.split('T')[0] : '';
+        return d >= effectiveStart && d <= effectiveEnd;
+      });
+
+      const totalSpent = filteredExpenses.reduce((s, e) => s + e.amount, 0);
+      const balanceRemaining = cycle ? cycle.totalAmount - totalSpent : 0;
+
+      // Parse range dates in local time to avoid UTC drift
+      const [sy, sm, sd] = effectiveStart.split('-').map(Number);
+      const [ey, em, ed] = effectiveEnd.split('-').map(Number);
+      const startD = new Date(sy, sm - 1, sd);
+      const endD   = new Date(ey, em - 1, ed);
+      const today  = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const daysInRange    = Math.max(1, Math.ceil((endD - startD) / (1000 * 60 * 60 * 24)));
+      const daysRemaining  = Math.max(1, Math.ceil((endD - today)  / (1000 * 60 * 60 * 24)));
+      const dailyLimit     = Math.max(0, balanceRemaining / daysRemaining);
+      const avgDaily       = totalSpent / Math.max(1, daysInRange);
+
+      return {
+        totalSpent,
+        balanceRemaining,
+        daysInRange,
+        daysRemaining,
+        dailyLimit,
+        avgDaily,
+        cycleEndDate: cycleEndStr,
+        filteredExpenses,
+      };
+    }
+
     const translations = {
       en: {
         appName: "SmartWallet AI",
@@ -215,16 +272,13 @@
       const [expCat, setExpCat] = useState('c1');
       const [expNote, setExpNote] = useState('');
 
-      // Compute cycle end date once — single source of truth for home + analytics
-      const cycleEndDate = cycle ? (() => {
-        const [y, m, d] = cycle.startDate.split('-').map(Number);
-        const end = new Date(y, m - 1, d + cycle.days);
-        return end.toISOString().split('T')[0];
-      })() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
       // Analytics date-range picker — defaults to the active cycle's actual range
+      const initCycleEnd = cycle ? (() => {
+        const [y, m, d] = cycle.startDate.split('-').map(Number);
+        return new Date(y, m - 1, d + cycle.days).toISOString().split('T')[0];
+      })() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       const [analyticsStart, setAnalyticsStart] = useState(cycle?.startDate || startDate);
-      const [analyticsEnd, setAnalyticsEnd] = useState(cycleEndDate);
+      const [analyticsEnd, setAnalyticsEnd] = useState(initCycleEnd);
 
       useEffect(() => { localStorage.setItem('sw_lang', lang); }, [lang]);
       useEffect(() => { localStorage.setItem('sw_curr', curr); }, [curr]);
@@ -281,17 +335,10 @@
 
       const isConverted = entryCurrency !== curr;
 
-      const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
-      const balanceRemaining = cycle ? cycle.totalAmount - totalSpent : 0;
-      // Days remaining — same cycleEndDate used by analytics, local-time safe
-      const daysRemaining = cycle ? (() => {
-        const [ey, em, ed] = cycleEndDate.split('-').map(Number);
-        const end = new Date(ey, em - 1, ed);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return Math.max(1, Math.ceil((end - today) / (1000 * 60 * 60 * 24)));
-      })() : 30;
-      const dailySafeLimit = Math.max(0, balanceRemaining / daysRemaining);
+      // ── HOME STATS — calls the shared function with the full cycle range ──
+      const homeStats = getActiveCycleStats(cycle, expenses, null, null);
+      const { totalSpent, balanceRemaining, daysRemaining, dailyLimit: dailySafeLimit } = homeStats;
+      const cycleEndDate = homeStats.cycleEndDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
       const handleStartCycle = (e) => {
         e.preventDefault();
@@ -480,17 +527,9 @@
 
               {/* ANALYTICS TAB PAGE */}
               {activeTab === 'analytics' && (() => {
-                // Filter expenses by the selected date range — live, no "apply" step
-                const filteredExpenses = expenses.filter(exp => {
-                  const d = exp.date ? exp.date.split('T')[0] : '';
-                  return d >= analyticsStart && d <= analyticsEnd;
-                });
-                const filteredTotal = filteredExpenses.reduce((s, e) => s + e.amount, 0);
-                const rangeStartD = new Date(analyticsStart);
-                const rangeEndD = new Date(analyticsEnd);
-                const rangeDays = Math.max(1, Math.ceil((rangeEndD - rangeStartD) / (1000 * 60 * 60 * 24)));
-                const filteredAvgDaily = filteredTotal / rangeDays;
-                const rangeDaysRemaining = Math.max(0, Math.ceil((rangeEndD - new Date()) / (1000 * 60 * 60 * 24)));
+                // ── ANALYTICS STATS — calls the SAME shared function with user-selected range ──
+                const analyticsStats = getActiveCycleStats(cycle, expenses, analyticsStart, analyticsEnd);
+                const { totalSpent: filteredTotal, daysInRange: rangeDays, daysRemaining: rangeDaysRemaining, avgDaily: filteredAvgDaily, filteredExpenses } = analyticsStats;
 
                 return (
                 <div className="space-y-6 animate-fadeIn">
