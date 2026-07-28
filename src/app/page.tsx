@@ -29,6 +29,7 @@ import {
   Globe,
   RefreshCw,
   LayoutDashboard,
+  RefreshCcw,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -43,23 +44,24 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 };
 
 export default function DashboardPage() {
-  const { expenses, categories, deleteExpense, resetCurrentCycle, setIsExpenseModalOpen } = useWallet();
-  const { t, formatCurrency, currency, setCurrency, language, setLanguage } = useLanguage();
+  const { expenses, categories, deleteExpense, resetCurrentCycle, setIsExpenseModalOpen, activeCycle } = useWallet();
+  const { t, convertAndFormat, currency, setCurrency, language, setLanguage, exchangeRateInfo } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<string>('home');
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
 
+  const entryCurrency = activeCycle?.currency || 'KRW';
+
   return (
     <div className="min-h-screen bg-[#F7F9F4] text-gray-900 flex flex-col lg:flex-row antialiased selection:bg-[#C0DD97] selection:text-[#173404]">
-      {/* DESKTOP SIDEBAR NAVIGATION (Hidden on mobile < 1024px) */}
+      {/* DESKTOP SIDEBAR NAVIGATION */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* MAIN APPLICATION CONTAINER (Flexible grid spanning full width on desktop) */}
+      {/* MAIN APPLICATION CONTAINER */}
       <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-12">
         {/* TOP APP BAR */}
         <header className="sticky top-0 z-30 bg-[#F7F9F4]/90 backdrop-blur-md px-4 sm:px-8 py-4 flex items-center justify-between border-b border-gray-200/80">
           <div className="flex items-center space-x-3">
-            {/* Mobile-only branding title */}
             <div className="lg:hidden">
               <h1 className="text-lg font-bold text-[#173404] tracking-tight font-display flex items-center space-x-1.5">
                 <span>SmartWallet</span>
@@ -70,7 +72,6 @@ export default function DashboardPage() {
               <p className="text-[11px] text-gray-500 font-medium">{t('tagline')}</p>
             </div>
 
-            {/* Desktop Section Header */}
             <div className="hidden lg:flex items-center space-x-2 text-[#173404]">
               <LayoutDashboard className="w-5 h-5 text-[#90C749]" />
               <h2 className="text-lg font-bold capitalize">
@@ -87,7 +88,7 @@ export default function DashboardPage() {
 
           {/* Right Header Actions */}
           <div className="flex items-center space-x-3">
-            {/* Quick Currency Badge Selector */}
+            {/* Currency Switcher */}
             <button
               onClick={() => setCurrency(currency === 'KRW' ? 'USD' : 'KRW')}
               className="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-xs font-bold text-[#173404] hover:bg-[#EAF3DE] transition-colors shadow-xs"
@@ -96,7 +97,7 @@ export default function DashboardPage() {
               <span>{currency === 'KRW' ? 'KRW (₩)' : 'USD ($)'}</span>
             </button>
 
-            {/* TOP-RIGHT LANGUAGE SWITCHER (EN / UZ) - Visible on every screen */}
+            {/* TOP-RIGHT LANGUAGE SWITCHER */}
             <LanguageSwitcher />
           </div>
         </header>
@@ -104,23 +105,15 @@ export default function DashboardPage() {
         {/* MAIN BODY CONTENT */}
         <main className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6 flex-1">
           {activeTab === 'home' && (
-            /* RESPONSIVE GRID LAYOUT:
-               - Mobile (<768px): Single column stack
-               - Desktop (>=1024px): 2-column layout (Left: Hero & Sparkline; Right: Expenses & Breakdown)
-            */
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               {/* LEFT COLUMN: HERO CARD & WEEKLY SPARKLINE CHART */}
               <div className="lg:col-span-6 xl:col-span-7 space-y-6">
-                {/* HERO CARD - Emotional Center displaying Daily Safe Spend */}
                 <HeroCard />
-
-                {/* Sparkline Weekly Chart */}
                 <SparklineChart />
               </div>
 
               {/* RIGHT COLUMN: RECENT EXPENSES & CATEGORY BREAKDOWN */}
               <div className="lg:col-span-6 xl:col-span-5 space-y-6">
-                {/* Recent Expenses List */}
                 <div className="bg-white rounded-[20px] p-5 shadow-sm border border-emerald-950/10 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -153,6 +146,8 @@ export default function DashboardPage() {
                           minute: '2-digit',
                         });
 
+                        const expDisplay = convertAndFormat(exp.amount, entryCurrency);
+
                         return (
                           <div
                             key={exp.id}
@@ -174,7 +169,7 @@ export default function DashboardPage() {
 
                             <div className="flex items-center space-x-2">
                               <span className="text-xs font-bold text-[#173404]">
-                                -{formatCurrency(exp.amount)}
+                                -{expDisplay.formattedText}
                               </span>
                               <button
                                 onClick={() => deleteExpense(exp.id)}
@@ -191,7 +186,6 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                {/* Category Breakdown Component */}
                 <CategoryBreakdown />
               </div>
             </div>
@@ -219,7 +213,6 @@ export default function DashboardPage() {
                 {t('settings.title')}
               </h2>
 
-              {/* User Demo Card */}
               <div className="bg-white rounded-[20px] p-5 shadow-sm border border-emerald-950/10 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="w-11 h-11 rounded-full bg-[#173404] text-[#EAF3DE] flex items-center justify-center font-bold text-base">
@@ -240,9 +233,25 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              {/* Preferences Settings */}
               <div className="bg-white rounded-[20px] p-5 shadow-sm border border-emerald-950/10 space-y-4">
-                {/* Currency Switcher */}
+                {/* Live Currency Rate Status Info */}
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                  <div className="flex items-center space-x-2">
+                    <RefreshCcw className="w-4 h-4 text-[#90C749]" />
+                    <span className="text-xs font-semibold text-gray-800">
+                      Live Exchange Rate API
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-[#173404] block">
+                      1 USD = {convertAndFormat(exchangeRateInfo?.usdToKrw || 1467, 'USD').formattedText}
+                    </span>
+                    <span className="text-[10px] text-gray-500">
+                      rate as of {exchangeRateInfo?.lastUpdated || 'recent'}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2.5">
                     <Coins className="w-4 h-4 text-[#173404]" />
@@ -274,7 +283,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Language Switcher in settings */}
                 <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                   <div className="flex items-center space-x-2.5">
                     <Globe className="w-4 h-4 text-[#173404]" />
@@ -306,7 +314,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Reset Cycle Button */}
                 <div className="pt-3 border-t border-gray-100">
                   <button
                     onClick={resetCurrentCycle}
@@ -321,12 +328,9 @@ export default function DashboardPage() {
           )}
         </main>
 
-        {/* MODALS */}
         <CycleSetupModal />
         <QuickAddExpenseModal />
         <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-
-        {/* MOBILE BOTTOM NAVIGATION BAR (Hidden on lg: breakpoints) */}
         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
       </div>
     </div>

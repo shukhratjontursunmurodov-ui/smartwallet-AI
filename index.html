@@ -50,10 +50,7 @@
   <script type="text/babel">
     const { useState, useEffect } = React;
 
-    /**
-     * Shared formatAmount utility using dot (.) as the thousands separator.
-     * Examples: 10000 -> ₩10.000, 1250000 -> ₩1.250.000
-     */
+    // Shared formatAmount utility using dot (.) as thousands separator
     function formatAmount(amount, currency = 'KRW') {
       if (isNaN(amount) || amount === null || amount === undefined) amount = 0;
       const rounded = Math.round(amount);
@@ -151,6 +148,37 @@
       const [lang, setLang] = useState(localStorage.getItem('sw_lang') || 'en');
       const [curr, setCurr] = useState(localStorage.getItem('sw_curr') || 'KRW');
       
+      const [usdToKrwRate, setUsdToKrwRate] = useState(1467);
+      const [rateLastUpdated, setRateLastUpdated] = useState('12:00');
+
+      // Fetch live exchange rate with 4-hour caching
+      useEffect(() => {
+        const cached = localStorage.getItem('sw_rate_cache');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (Date.now() - parsed.time < 4 * 60 * 60 * 1000) {
+              setUsdToKrwRate(parsed.rate);
+              setRateLastUpdated(parsed.updatedStr);
+              return;
+            }
+          } catch(e){}
+        }
+
+        fetch('https://open.er-api.com/v6/latest/USD')
+          .then(r => r.json())
+          .then(data => {
+            if (data && data.rates && data.rates.KRW) {
+              const r = data.rates.KRW;
+              const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              setUsdToKrwRate(r);
+              setRateLastUpdated(timeStr);
+              localStorage.setItem('sw_rate_cache', JSON.stringify({ rate: r, updatedStr: timeStr, time: Date.now() }));
+            }
+          })
+          .catch(() => {});
+      }, []);
+
       const [cycle, setCycle] = useState(() => {
         const saved = localStorage.getItem('sw_cycle');
         return saved ? JSON.parse(saved) : null;
@@ -168,7 +196,6 @@
       const [showExpenseModal, setShowExpenseModal] = useState(false);
       const [activeTab, setActiveTab] = useState('home');
 
-      // Fully custom cycle duration setup
       const [setupAmount, setSetupAmount] = useState('');
       const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
       const [durationMode, setDurationMode] = useState('endDate');
@@ -221,7 +248,19 @@
 
       const calculatedDays = getCalculatedDays();
 
-      // Formula: daily_limit = (cycle_total_amount - amount_spent_so_far) / days_remaining_in_cycle
+      // Entry currency recorded on cycle
+      const entryCurrency = cycle?.entryCurrency || 'KRW';
+
+      // Convert for display without modifying stored values
+      const convertVal = (amt) => {
+        if (entryCurrency === curr) return amt;
+        if (entryCurrency === 'USD' && curr === 'KRW') return amt * usdToKrwRate;
+        if (entryCurrency === 'KRW' && curr === 'USD') return amt / usdToKrwRate;
+        return amt;
+      };
+
+      const isConverted = entryCurrency !== curr;
+
       const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
       const balanceRemaining = cycle ? cycle.totalAmount - totalSpent : 0;
       const daysRemaining = cycle ? Math.max(1, cycle.days) : 30;
@@ -231,7 +270,7 @@
         e.preventDefault();
         const amt = parseFloat(setupAmount.replace(/,/g, ''));
         if (!amt || amt <= 0) return;
-        setCycle({ id: Date.now().toString(), totalAmount: amt, days: calculatedDays, startDate, is_active: true });
+        setCycle({ id: Date.now().toString(), totalAmount: amt, days: calculatedDays, startDate, entryCurrency: curr, is_active: true });
         setExpenses([]);
         setShowCycleModal(false);
       };
@@ -249,7 +288,6 @@
       return (
         <div className="min-h-screen bg-[#F7F9F4] text-gray-900 flex flex-col lg:flex-row">
           
-          {/* DESKTOP SIDEBAR NAVIGATION */}
           <aside className="hidden lg:flex flex-col w-64 bg-[#173404] text-white p-6 justify-between min-h-screen sticky top-0 border-r border-[#265307] shadow-xl shrink-0">
             <div className="space-y-8">
               <div>
@@ -286,14 +324,12 @@
             </div>
 
             <div className="pt-4 border-t border-[#265307] text-xs text-[#C0DD97]/70">
-              <span className="text-white font-semibold">Custom Budget Cycles Active</span>
+              <span className="text-white font-semibold">Live Conversion Enabled</span>
             </div>
           </aside>
 
-          {/* MAIN CONTENT AREA */}
           <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-12">
             
-            {/* TOP HEADER */}
             <header className="sticky top-0 z-30 bg-[#F7F9F4]/90 backdrop-blur-md px-4 sm:px-8 py-4 flex items-center justify-between border-b border-gray-200">
               <div className="lg:hidden">
                 <h1 className="text-lg font-bold text-[#173404] tracking-tight font-display flex items-center space-x-1.5">
@@ -307,7 +343,6 @@
                 <h2 className="text-lg font-bold text-[#173404] capitalize">{activeTab} Dashboard</h2>
               </div>
 
-              {/* TOP-RIGHT CONTROLS */}
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setCurr(curr === 'KRW' ? 'USD' : 'KRW')}
@@ -333,12 +368,10 @@
               </div>
             </header>
 
-            {/* MAIN DASHBOARD CONTENT */}
             <main className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6 flex-1">
               {activeTab === 'home' && (
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   
-                  {/* LEFT COLUMN: HERO CARD */}
                   <div className="lg:col-span-7 space-y-6">
                     <div className="relative overflow-hidden bg-[#173404] text-white rounded-[20px] p-6 shadow-xl border border-[#265307]">
                       <div className="flex items-center justify-between mb-4">
@@ -351,12 +384,18 @@
                         </div>
                       </div>
 
-                      {/* HERO NUMBER */}
-                      <div className="mb-6">
+                      <div className="mb-4">
                         <div className="text-[36px] sm:text-[44px] font-medium leading-none font-display tracking-tight text-white">
-                          {formatAmount(dailySafeLimit, curr)}
+                          {formatAmount(convertVal(dailySafeLimit), curr)}
                         </div>
                         <div className="text-xs text-[#C0DD97] mt-1.5">{t('hero.todayLabel')} &bull; {t('hero.withinBudget')}</div>
+
+                        {/* Conversion note near values */}
+                        {isConverted && (
+                          <div className="mt-2 inline-flex text-[11px] bg-[#C0DD97]/20 text-[#C0DD97] px-2.5 py-0.5 rounded border border-[#C0DD97]/30">
+                            Converted (rate as of {rateLastUpdated} — 1 USD = {formatAmount(usdToKrwRate, 'KRW')})
+                          </div>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[#2a5509]">
@@ -366,13 +405,12 @@
                         </div>
                         <div className="bg-white/5 rounded-xl p-2.5">
                           <div className="text-[10px] uppercase text-[#C0DD97]">{t('hero.totalBalance')}</div>
-                          <div className="text-sm font-semibold">{formatAmount(balanceRemaining, curr)}</div>
+                          <div className="text-sm font-semibold">{formatAmount(convertVal(balanceRemaining), curr)}</div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* RIGHT COLUMN: RECENT EXPENSES */}
                   <div className="lg:col-span-5 space-y-6">
                     <div className="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100 space-y-3">
                       <div className="flex items-center justify-between">
@@ -395,7 +433,7 @@
                                   <div className="text-[10px] text-gray-500">{t(`categories.${cat?.key}`)}</div>
                                 </div>
                               </div>
-                              <span className="text-xs font-bold text-[#173404]">-{formatAmount(exp.amount, curr)}</span>
+                              <span className="text-xs font-bold text-[#173404]">-{formatAmount(convertVal(exp.amount), curr)}</span>
                             </div>
                           );
                         })}
@@ -408,8 +446,14 @@
               {activeTab === 'profile' && (
                 <div className="bg-white max-w-xl mx-auto rounded-[20px] p-6 shadow-sm border border-gray-100 space-y-4">
                   <h3 className="text-sm font-bold text-[#173404]">Settings & Preferences</h3>
+                  
+                  <div className="p-3 bg-[#EAF3DE] rounded-xl flex items-center justify-between text-xs">
+                    <span>Live Exchange Rate:</span>
+                    <span className="font-bold text-[#173404]">1 USD = {formatAmount(usdToKrwRate, 'KRW')} ({rateLastUpdated})</span>
+                  </div>
+
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold">Currency</span>
+                    <span className="text-xs font-semibold">Display Currency</span>
                     <div className="flex space-x-1">
                       <button onClick={() => setCurr('KRW')} className={`px-3 py-1 text-xs font-bold rounded-lg ${curr === 'KRW' ? 'bg-[#173404] text-white' : 'bg-gray-100'}`}>KRW (₩)</button>
                       <button onClick={() => setCurr('USD')} className={`px-3 py-1 text-xs font-bold rounded-lg ${curr === 'USD' ? 'bg-[#173404] text-white' : 'bg-gray-100'}`}>USD ($)</button>
@@ -422,7 +466,6 @@
               )}
             </main>
 
-            {/* FULLY CUSTOM CYCLE SETUP MODAL */}
             {showCycleModal && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                 <div className="bg-white w-full max-w-md rounded-[24px] p-6 shadow-2xl space-y-4">
@@ -431,7 +474,6 @@
                     <p className="text-xs text-gray-600">{t('cycleSetup.blockingPrompt')}</p>
                   </div>
                   <form onSubmit={handleStartCycle} className="space-y-4">
-                    {/* Manual amount entry */}
                     <div>
                       <label className="text-xs font-semibold block mb-1">{t('cycleSetup.amountLabel')}</label>
                       <input
@@ -443,8 +485,6 @@
                         className="w-full px-4 py-3 bg-[#F7F9F4] border rounded-xl font-bold text-lg text-[#173404]"
                       />
                     </div>
-
-                    {/* Flexible Start Date */}
                     <div>
                       <label className="text-xs font-semibold block mb-1">{t('cycleSetup.startDateLabel')}</label>
                       <input
@@ -455,8 +495,6 @@
                         className="w-full px-3 py-2 bg-[#F7F9F4] border rounded-xl text-xs font-bold text-gray-800"
                       />
                     </div>
-
-                    {/* Custom Cycle Duration Selector */}
                     <div className="space-y-2 pt-2 border-t">
                       <div className="flex items-center justify-between text-xs font-semibold">
                         <span>{t('cycleSetup.durationLabel')}</span>
@@ -519,7 +557,6 @@
               </div>
             )}
 
-            {/* QUICK ADD EXPENSE MODAL */}
             {showExpenseModal && (
               <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
                 <div className="bg-white w-full max-w-md rounded-t-[28px] sm:rounded-[24px] p-6 shadow-2xl space-y-4">
@@ -562,7 +599,6 @@
               </div>
             )}
 
-            {/* MOBILE BOTTOM NAVIGATION */}
             <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden max-w-md mx-auto px-4 pb-4">
               <div className="bg-[#173404] text-white rounded-full shadow-2xl p-2 flex items-center justify-around">
                 <button onClick={() => setActiveTab('home')} className={`text-xs font-semibold px-4 py-1.5 rounded-full ${activeTab === 'home' ? 'bg-[#90C749] text-[#173404]' : 'text-white/80'}`}>

@@ -3,7 +3,7 @@
 import React from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { Flame, Calendar, Wallet, RefreshCw } from 'lucide-react';
+import { Flame, Calendar, Wallet, RefreshCw, RefreshCcw } from 'lucide-react';
 
 export const HeroCard: React.FC = () => {
   const {
@@ -14,11 +14,18 @@ export const HeroCard: React.FC = () => {
     activeCycle,
     resetCurrentCycle,
   } = useWallet();
-  const { t, formatCurrency } = useLanguage();
+  
+  const { t, convertAndFormat, currency } = useLanguage();
+
+  const entryCurrency = activeCycle?.currency || 'KRW';
+
+  // Convert for display only if display currency differs from entry currency
+  const dailyLimitDisplay = convertAndFormat(dailySafeLimit, entryCurrency);
+  const balanceDisplay = convertAndFormat(balanceRemaining, entryCurrency);
 
   return (
     <div className="relative overflow-hidden bg-[#173404] text-white rounded-[20px] p-6 shadow-xl border border-[#265307]">
-      {/* Background ambient lighting subtle decoration */}
+      {/* Background ambient lighting */}
       <div className="absolute -top-12 -right-12 w-44 h-44 bg-[#C0DD97]/15 rounded-full blur-2xl pointer-events-none" />
       <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-[#90C749]/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -40,14 +47,23 @@ export const HeroCard: React.FC = () => {
         </div>
       </div>
 
-      {/* HERO NUMBER - Emotional Center of the App */}
-      <div className="mb-6 relative z-10">
-        <div className="text-[34px] sm:text-[40px] font-medium leading-none tracking-tight text-white font-display">
-          {formatCurrency(dailySafeLimit)}
+      {/* HERO NUMBER - Displaying converted or native limit */}
+      <div className="mb-4 relative z-10">
+        <div className="text-[34px] sm:text-[42px] font-medium leading-none tracking-tight text-white font-display">
+          {dailyLimitDisplay.formattedText}
         </div>
-        <div className="text-sm text-[#C0DD97]/90 mt-1.5 font-normal">
-          {t('hero.todayLabel')} &bull; {t('hero.withinBudget')}
+
+        <div className="flex items-center space-x-2 text-xs text-[#C0DD97]/90 mt-1.5 font-normal">
+          <span>{t('hero.todayLabel')} &bull; {t('hero.withinBudget')}</span>
         </div>
+
+        {/* Live Exchange Rate Conversion Note when display currency != entry currency */}
+        {dailyLimitDisplay.isConverted && (
+          <div className="mt-2.5 inline-flex items-center space-x-1.5 bg-[#C0DD97]/20 text-[#C0DD97] text-[11px] px-2.5 py-1 rounded-lg border border-[#C0DD97]/30">
+            <RefreshCcw className="w-3 h-3 text-[#90C749] shrink-0" />
+            <span>Converted ({dailyLimitDisplay.rateNote})</span>
+          </div>
+        )}
       </div>
 
       {/* Secondary Metrics Grid */}
@@ -77,7 +93,7 @@ export const HeroCard: React.FC = () => {
               {t('hero.totalBalance')}
             </div>
             <div className="text-base font-semibold text-white">
-              {formatCurrency(balanceRemaining)}
+              {balanceDisplay.formattedText}
             </div>
           </div>
         </div>

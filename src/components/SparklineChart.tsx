@@ -6,18 +6,18 @@ import { useLanguage } from '@/context/LanguageContext';
 import { BarChart3 } from 'lucide-react';
 
 export const SparklineChart: React.FC = () => {
-  const { expenses } = useWallet();
-  const { t, formatCurrency } = useLanguage();
+  const { expenses, activeCycle } = useWallet();
+  const { t, convertAndFormat } = useLanguage();
 
-  // Aggregate expenses for the last 7 days
+  const entryCurrency = activeCycle?.currency || 'KRW';
+
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const today = new Date();
   
-  // Calculate daily totals for last 7 days
   const last7DaysData = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date();
     d.setDate(today.getDate() - (6 - i));
-    const dayName = days[(d.getDay() + 6) % 7]; // Mon=0 ... Sun=6
+    const dayName = days[(d.getDay() + 6) % 7];
     const dateStr = d.toISOString().split('T')[0];
 
     const total = expenses
@@ -43,20 +43,18 @@ export const SparklineChart: React.FC = () => {
         <span className="text-[11px] text-gray-500 font-medium">Last 7 days</span>
       </div>
 
-      {/* Bar Sparkline Visualizer */}
       <div className="flex items-end justify-between space-x-2 pt-4 pb-1 h-32 border-b border-gray-100">
         {last7DaysData.map((item, idx) => {
           const heightPercent = Math.max(8, Math.round((item.total / maxSpend) * 100));
           const isToday = idx === 6;
+          const formatted = convertAndFormat(item.total, entryCurrency).formattedText;
 
           return (
             <div key={idx} className="flex-1 flex flex-col items-center group relative">
-              {/* Tooltip on hover */}
               <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-[#173404] text-[#EAF3DE] text-[10px] py-0.5 px-1.5 rounded whitespace-nowrap pointer-events-none z-20">
-                {formatCurrency(item.total)}
+                {formatted}
               </div>
 
-              {/* Bar */}
               <div
                 style={{ height: `${heightPercent}%` }}
                 className={`w-full rounded-t-md transition-all duration-300 ${

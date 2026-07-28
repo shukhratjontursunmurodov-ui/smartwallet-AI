@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Currency, Language } from '@/lib/types';
 import { formatAmount } from '@/lib/formatAmount';
+import { getUsdToKrwRate, convertAmount, ExchangeRateData } from '@/lib/exchangeRate';
 import enTranslations from '@/locales/en.json';
 import uzTranslations from '@/locales/uz.json';
 
@@ -15,6 +16,11 @@ interface LanguageContextType {
   setCurrency: (curr: Currency) => void;
   t: (path: string, params?: Record<string, string | number>) => string;
   formatCurrency: (amount: number) => string;
+  exchangeRateInfo: ExchangeRateData | null;
+  convertAndFormat: (
+    amount: number,
+    entryCurrency?: Currency
+  ) => { formattedText: string; isConverted: boolean; rateNote?: string };
 }
 
 const translations: Record<Language, TranslationsMap> = {
@@ -27,6 +33,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>('en');
   const [currency, setCurrencyState] = useState<Currency>('KRW');
+  const [exchangeRateInfo, setExchangeRateInfo] = useState<ExchangeRateData | null>(null);
 
   useEffect(() => {
     const savedLang = localStorage.getItem('smartwallet_lang') as Language;
@@ -37,6 +44,11 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (savedCurr && (savedCurr === 'KRW' || savedCurr === 'USD')) {
       setCurrencyState(savedCurr);
     }
+
+    // Fetch exchange rate on mount (cached for 4 hours)
+    getUsdToKrwRate().then((data) => {
+      setExchangeRateInfo(data);
+    });
   }, []);
 
   const setLanguage = (lang: Language) => {
@@ -81,9 +93,33 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return current;
   };
 
-  // Uses the single shared formatAmount utility everywhere
   const formatCurrency = (amount: number): string => {
     return formatAmount(amount, currency);
+  };
+
+  // Convert amount for display only if entryCurrency differs from active display currency
+  const convertAndFormat = (amount: number, entryCurrency: Currency = 'KRW') => {
+    const rate = exchangeRateInfo?.usdToKrw || 1467;
+    const { convertedAmount, isConverted } = convertAmount(
+      amount,
+      entryCurrency,
+      currency,
+      rate
+    );
+
+    const formattedText = formatAmount(convertedAmount, currency);
+    
+    let rateNote: string | undefined = undefined;
+    if (isConverted && exchangeRateInfo) {
+      const formattedRate = formatAmount(rate, 'KRW');
+      rateNote = `rate as of ${exchangeRateInfo.lastUpdated} (1 USD = ${formattedRate})`;
+    }
+
+    return {
+      formattedText,
+      isConverted,
+      rateNote,
+    };
   };
 
   return (
@@ -95,6 +131,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setCurrency,
         t,
         formatCurrency,
+        exchangeRateInfo,
+        convertAndFormat,
       }}
     >
       {children}
