@@ -269,6 +269,7 @@
 
       const [showCycleModal, setShowCycleModal] = useState(!cycle);
       const [showExpenseModal, setShowExpenseModal] = useState(false);
+      const [editingExpenseId, setEditingExpenseId] = useState(null); // null = new, id = editing
       const [showAddCatModal, setShowAddCatModal] = useState(false);
       const [activeTab, setActiveTab] = useState('home');
       const [selectedCatFilter, setSelectedCatFilter] = useState(null);
@@ -368,11 +369,35 @@
         e.preventDefault();
         const amt = parseInputAmount(expAmount);
         if (!amt || amt <= 0 || !expCat) return;
-        setExpenses([{ id: Date.now().toString(), amount: amt, catId: expCat, note: expNote, date: new Date().toISOString() }, ...expenses]);
+
+        if (editingExpenseId) {
+          // UPDATE existing expense in-place (no duplicate)
+          setExpenses(expenses.map(exp =>
+            exp.id === editingExpenseId
+              ? { ...exp, amount: amt, catId: expCat, note: expNote }
+              : exp
+          ));
+        } else {
+          // CREATE new expense
+          setExpenses([{ id: Date.now().toString(), amount: amt, catId: expCat, note: expNote, date: new Date().toISOString() }, ...expenses]);
+        }
         setExpAmount('');
         setExpNote('');
         setExpCat('');
+        setEditingExpenseId(null);
         setShowExpenseModal(false);
+      };
+
+      const handleEditExpense = (exp) => {
+        setEditingExpenseId(exp.id);
+        setExpCat(exp.catId);
+        setExpAmount(formatInputAmount(exp.amount));
+        setExpNote(exp.note || '');
+        setShowExpenseModal(true);
+      };
+
+      const handleDeleteExpense = (expId) => {
+        setExpenses(expenses.filter(e => e.id !== expId));
       };
 
       const handleAddCategory = (e) => {
@@ -519,19 +544,39 @@
                       </div>
                       <div className="divide-y divide-gray-100 max-h-[360px] overflow-y-auto">
                         {expenses.map((exp) => {
-                          const cat = INITIAL_CATS.find(c => c.id === exp.catId);
+                          const cat = categories.find(c => c.id === exp.catId) || INITIAL_CATS.find(c => c.id === exp.catId);
+                          const iconMap = { utensils: '🍜', bus: '🚌', book: '📚', gamepad: '🎮', shopping: '🛒', receipt: '🧾', sparkles: '✨', more: '📦' };
+                          const icon = iconMap[cat?.key] || '📦';
                           return (
-                            <div key={exp.id} className="py-3 flex items-center justify-between">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-9 h-9 rounded-full bg-[#EAF3DE] text-[#173404] flex items-center justify-center font-bold text-xs">
-                                  {cat?.key ? t(`categories.${cat.key}`)[0] : 'E'}
+                            <div key={exp.id} className="py-3 flex items-center justify-between group">
+                              <div className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer" onClick={() => handleEditExpense(exp)}>
+                                <div className="w-9 h-9 rounded-full bg-[#EAF3DE] text-[#173404] flex items-center justify-center text-base shrink-0">
+                                  {icon}
                                 </div>
-                                <div>
-                                  <div className="text-xs font-semibold text-gray-900">{exp.note || t(`categories.${cat?.key}`)}</div>
-                                  <div className="text-[10px] text-gray-500">{t(`categories.${cat?.key}`)}</div>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-semibold text-gray-900 truncate">{exp.note || (cat?.name || t(`categories.${cat?.key}`))}</div>
+                                  <div className="text-[10px] text-gray-500">{cat?.name || t(`categories.${cat?.key}`)}</div>
                                 </div>
                               </div>
-                              <span className="text-xs font-bold text-[#173404]">-{formatAmount(convertVal(exp.amount), curr)}</span>
+                              <div className="flex items-center space-x-2 shrink-0">
+                                <span className="text-xs font-bold text-[#173404]">-{formatAmount(convertVal(exp.amount), curr)}</span>
+                                {/* Edit pencil */}
+                                <button
+                                  onClick={() => handleEditExpense(exp)}
+                                  className="p-1.5 rounded-lg text-gray-300 hover:text-[#173404] hover:bg-[#EAF3DE] transition-all opacity-0 group-hover:opacity-100"
+                                  title="Edit"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                </button>
+                                {/* Delete trash */}
+                                <button
+                                  onClick={() => handleDeleteExpense(exp.id)}
+                                  className="p-1.5 rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                                  title="Delete"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                </button>
+                              </div>
                             </div>
                           );
                         })}
@@ -836,13 +881,13 @@
                   {/* Header */}
                   <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                     <div className="flex items-center space-x-2">
-                      <div className="p-2 rounded-xl bg-[#EAF3DE] text-[#173404]">
-                        <span className="text-lg">+</span>
+                      <div className={`p-2 rounded-xl ${editingExpenseId ? 'bg-amber-50 text-amber-700' : 'bg-[#EAF3DE] text-[#173404]'}`}>
+                        <span className="text-lg">{editingExpenseId ? '✏️' : '+'}</span>
                       </div>
-                      <h3 className="text-lg font-bold text-[#173404]">{t('expense.quickAddHeader')}</h3>
+                      <h3 className="text-lg font-bold text-[#173404]">{editingExpenseId ? 'Edit Expense' : t('expense.quickAddHeader')}</h3>
                     </div>
                     <button
-                      onClick={() => { setShowExpenseModal(false); setExpCat(''); setExpAmount(''); setExpNote(''); }}
+                      onClick={() => { setShowExpenseModal(false); setExpCat(''); setExpAmount(''); setExpNote(''); setEditingExpenseId(null); }}
                       className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-lg font-bold"
                     >
                       ✕
