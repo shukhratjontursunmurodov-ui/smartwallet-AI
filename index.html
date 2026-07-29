@@ -915,8 +915,16 @@
             {showCycleModal && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                 <div className="bg-white w-full max-w-md rounded-[24px] p-6 shadow-2xl space-y-4">
-                  <div className="text-center space-y-1">
-                    <h3 className="text-lg font-bold text-[#173404]">{t('cycleSetup.title')}</h3>
+                  <div className="relative text-center space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowCycleModal(false)}
+                      className="absolute -right-1 -top-1 p-1 text-gray-400 hover:text-gray-700 font-bold text-lg leading-none transition-colors"
+                      title="Close"
+                    >
+                      ✕
+                    </button>
+                    <h3 className="text-lg font-bold text-[#173404] pr-6">{t('cycleSetup.title')}</h3>
                     <p className="text-xs text-gray-600">{t('cycleSetup.blockingPrompt')}</p>
                   </div>
                   <form onSubmit={handleStartCycle} className="space-y-4">
