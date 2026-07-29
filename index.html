@@ -272,6 +272,8 @@
       const [editingExpenseId, setEditingExpenseId] = useState(null); // null = new, id = editing
       const [showAddCatModal, setShowAddCatModal] = useState(false);
       const [showEditCycleModal, setShowEditCycleModal] = useState(false);
+      const [showEditCycleAmountModal, setShowEditCycleAmountModal] = useState(false);
+      const [editCycleAmountValue, setEditCycleAmountValue] = useState('');
       const [activeTab, setActiveTab] = useState('home');
       const [selectedCatFilter, setSelectedCatFilter] = useState(null);
       const [expandedHistoryId, setExpandedHistoryId] = useState(null);
@@ -403,6 +405,15 @@
         const newDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
         setCycle({ ...cycle, days: newDays });
         setShowEditCycleModal(false);
+      };
+
+      // Edit the active cycle's total budget amount
+      const handleEditCycleAmount = (newAmountStr) => {
+        if (!cycle) return;
+        const newAmt = parseInputAmount(newAmountStr);
+        if (!newAmt || newAmt <= 0) return;
+        setCycle({ ...cycle, totalAmount: newAmt });
+        setShowEditCycleAmountModal(false);
       };
 
       // End current cycle early and prompt for new one
@@ -616,12 +627,20 @@
                             <span className="text-sm">📅</span>
                             <span className="text-xs font-bold text-[#173404]">Active Cycle ({cycle.startDate} → {cycleEndDate})</span>
                           </div>
-                          <button
-                            onClick={() => { setEditCycleEndValue(cycleEndDate); setShowEditCycleModal(true); }}
-                            className="text-[11px] font-semibold text-[#173404] bg-[#EAF3DE] hover:bg-[#C0DD97] px-2.5 py-1 rounded-lg transition-all"
-                          >
-                            ✏️ Edit End Date
-                          </button>
+                          <div className="flex items-center space-x-1.5">
+                            <button
+                              onClick={() => { setEditCycleAmountValue(formatInputAmount(cycle.totalAmount)); setShowEditCycleAmountModal(true); }}
+                              className="text-[11px] font-semibold text-[#173404] bg-[#EAF3DE] hover:bg-[#C0DD97] px-2.5 py-1 rounded-lg transition-all"
+                            >
+                              ✏️ Edit Amount
+                            </button>
+                            <button
+                              onClick={() => { setEditCycleEndValue(cycleEndDate); setShowEditCycleModal(true); }}
+                              className="text-[11px] font-semibold text-[#173404] bg-[#EAF3DE] hover:bg-[#C0DD97] px-2.5 py-1 rounded-lg transition-all"
+                            >
+                              ✏️ Edit End Date
+                            </button>
+                          </div>
                         </div>
                         <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-50">
                           <span>Length: {cycle.days} days</span>
@@ -856,6 +875,12 @@
                       </div>
                       <div className="flex space-x-2">
                         <button
+                          onClick={() => { setEditCycleAmountValue(formatInputAmount(cycle.totalAmount)); setShowEditCycleAmountModal(true); }}
+                          className="flex-1 py-2 bg-[#EAF3DE] hover:bg-[#C0DD97] text-[#173404] text-xs font-semibold rounded-xl transition-all"
+                        >
+                          ✏️ Edit Amount
+                        </button>
+                        <button
                           onClick={() => { setEditCycleEndValue(cycleEndDate); setShowEditCycleModal(true); }}
                           className="flex-1 py-2 bg-[#EAF3DE] hover:bg-[#C0DD97] text-[#173404] text-xs font-semibold rounded-xl transition-all"
                         >
@@ -865,7 +890,7 @@
                           onClick={handleEndCycleEarly}
                           className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold rounded-xl transition-all"
                         >
-                          End Cycle Early
+                          End Early
                         </button>
                       </div>
                     </div>
@@ -1215,6 +1240,56 @@
                         className="flex-1 py-3 bg-[#173404] text-[#EAF3DE] font-semibold rounded-xl shadow-lg text-sm"
                       >
                         Save End Date
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* EDIT CYCLE AMOUNT MODAL */}
+            {showEditCycleAmountModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+                <div className="bg-white w-full max-w-md rounded-[24px] p-6 shadow-2xl space-y-4">
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <h3 className="text-base font-bold text-[#173404]">Edit Budget Amount</h3>
+                    <button onClick={() => setShowEditCycleAmountModal(false)} className="text-gray-400 font-bold">✕</button>
+                  </div>
+                  <form onSubmit={(e) => { e.preventDefault(); handleEditCycleAmount(editCycleAmountValue); }} className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold block mb-1">Total Budget Amount</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#173404] font-bold text-lg">
+                          {curr === 'KRW' ? '₩' : '$'}
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          required
+                          placeholder="0"
+                          value={editCycleAmountValue}
+                          onChange={(e) => setEditCycleAmountValue(formatInputAmount(e.target.value))}
+                          className="w-full pl-10 pr-4 py-3 bg-[#F7F9F4] border border-gray-200 rounded-xl font-bold text-xl text-[#173404] focus:outline-none focus:ring-2 focus:ring-[#173404] transition-all"
+                        />
+                      </div>
+                      <p className="text-[11px] text-gray-500 mt-1.5">
+                        Updating the budget amount immediately recalculates remaining balance and daily safe limit.
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowEditCycleAmountModal(false)}
+                        className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!parseInputAmount(editCycleAmountValue)}
+                        className="flex-1 py-3 bg-[#173404] text-[#EAF3DE] font-semibold rounded-xl shadow-lg text-sm disabled:opacity-50"
+                      >
+                        Save Amount
                       </button>
                     </div>
                   </form>
