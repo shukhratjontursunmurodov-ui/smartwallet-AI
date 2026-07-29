@@ -274,6 +274,7 @@
       const [showEditCycleModal, setShowEditCycleModal] = useState(false);
       const [activeTab, setActiveTab] = useState('home');
       const [selectedCatFilter, setSelectedCatFilter] = useState(null);
+      const [expandedHistoryId, setExpandedHistoryId] = useState(null);
 
       // Cycle history — preserved old cycles
       const [cycleHistory, setCycleHistory] = useState(() => {
@@ -869,14 +870,133 @@
 
                   {/* CYCLE HISTORY */}
                   {cycleHistory.length > 0 && (
-                    <div className="space-y-2 pt-2 border-t border-gray-100">
-                      <div className="text-xs font-bold text-gray-500">Cycle History ({cycleHistory.length})</div>
-                      {cycleHistory.slice(-3).reverse().map((h, i) => (
-                        <div key={i} className="flex items-center justify-between text-[11px] bg-gray-50 p-2.5 rounded-lg">
-                          <span className="text-gray-600">{h.startDate} • {h.days} days</span>
-                          <span className="font-bold text-[#173404]">{formatAmount(h.totalAmount, h.entryCurrency || 'KRW')}</span>
-                        </div>
-                      ))}
+                    <div className="space-y-3 pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs font-bold text-gray-700">Cycle History ({cycleHistory.length})</div>
+                        <span className="text-[10px] text-gray-400">Tap to expand details</span>
+                      </div>
+                      <div className="space-y-2">
+                        {cycleHistory.slice().reverse().map((h, i) => {
+                          const itemKey = h.id || `hist-${i}`;
+                          const isExpanded = expandedHistoryId === itemKey;
+                          
+                          // Calculate end date
+                          const [sy, sm, sd] = (h.startDate || '2026-01-01').split('-').map(Number);
+                          const endDateObj = new Date(sy, sm - 1, sd + (h.days || 30));
+                          const endDateStr = endDateObj.toISOString().split('T')[0];
+
+                          // Expenses & stats
+                          const hExpenses = h.expenses || [];
+                          const hTotalSpent = hExpenses.reduce((s, e) => s + e.amount, 0);
+                          const hBalanceRemaining = (h.totalAmount || 0) - hTotalSpent;
+                          const hCurr = h.entryCurrency || 'KRW';
+
+                          return (
+                            <div key={itemKey} className="border border-gray-200 rounded-xl overflow-hidden transition-all bg-white shadow-xs">
+                              {/* Clickable Header Row */}
+                              <button
+                                type="button"
+                                onClick={() => setExpandedHistoryId(isExpanded ? null : itemKey)}
+                                className="w-full flex items-center justify-between p-3 text-left hover:bg-[#F7F9F4] transition-colors"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <span className={`text-xs transition-transform ${isExpanded ? 'rotate-90' : ''}`}>▶</span>
+                                  <div>
+                                    <div className="text-xs font-bold text-[#173404]">
+                                      {h.startDate} → {endDateStr}
+                                    </div>
+                                    <div className="text-[10px] text-gray-500">
+                                      {h.days} days • {hExpenses.length} {hExpenses.length === 1 ? 'expense' : 'expenses'}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-xs font-bold text-[#173404]">
+                                    {formatAmount(convertVal(h.totalAmount), curr)}
+                                  </div>
+                                  <div className="text-[10px] text-gray-400">
+                                    Spent: {formatAmount(convertVal(hTotalSpent), curr)}
+                                  </div>
+                                </div>
+                              </button>
+
+                              {/* Expandable Details Body */}
+                              {isExpanded && (
+                                <div className="p-3 bg-[#F7F9F4] border-t border-gray-100 space-y-3 text-xs animate-fadeIn">
+                                  {/* Stats Summary Grid */}
+                                  <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100">
+                                      <div className="text-[10px] text-gray-400 uppercase">Budget</div>
+                                      <div className="font-bold text-[#173404]">{formatAmount(convertVal(h.totalAmount), curr)}</div>
+                                    </div>
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100">
+                                      <div className="text-[10px] text-gray-400 uppercase">Spent</div>
+                                      <div className="font-bold text-amber-700">{formatAmount(convertVal(hTotalSpent), curr)}</div>
+                                    </div>
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100">
+                                      <div className="text-[10px] text-gray-400 uppercase">Remaining</div>
+                                      <div className="font-bold text-emerald-700">{formatAmount(convertVal(hBalanceRemaining), curr)}</div>
+                                    </div>
+                                  </div>
+
+                                  {/* Category Breakdown (reusing standard category bar structure) */}
+                                  <div className="bg-white p-3 rounded-lg border border-gray-100 space-y-2">
+                                    <div className="font-bold text-[#173404] text-[11px]">Category Spending</div>
+                                    {categories.map(cat => {
+                                      const catSum = hExpenses.filter(e => e.catId === cat.id).reduce((s, e) => s + e.amount, 0);
+                                      const pct = hTotalSpent > 0 ? Math.round((catSum / hTotalSpent) * 100) : 0;
+                                      const displayName = cat.name || t(`categories.${cat.key}`);
+                                      return (
+                                        <div key={cat.id} className="space-y-1">
+                                          <div className="flex justify-between text-[11px]">
+                                            <span className="text-gray-700">{displayName}</span>
+                                            <span className="font-semibold text-[#173404]">
+                                              {catSum > 0 ? `${formatAmount(convertVal(catSum), curr)} (${pct}%)` : '₩0'}
+                                            </span>
+                                          </div>
+                                          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                            <div style={{ width: `${catSum > 0 ? pct : 0}%` }} className="h-full bg-[#90C749]" />
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Individual Expenses List (reusing expense list item design) */}
+                                  <div className="bg-white p-3 rounded-lg border border-gray-100 space-y-2">
+                                    <div className="font-bold text-[#173404] text-[11px]">Logged Expenses</div>
+                                    {hExpenses.length === 0 ? (
+                                      <div className="text-[10px] text-gray-400 italic">No expenses logged in this cycle</div>
+                                    ) : (
+                                      <div className="divide-y divide-gray-100">
+                                        {hExpenses.map(exp => {
+                                          const cat = categories.find(c => c.id === exp.catId) || INITIAL_CATS.find(c => c.id === exp.catId);
+                                          const iconMap = { utensils: '🍜', bus: '🚌', book: '📚', gamepad: '🎮', shopping: '🛒', receipt: '🧾', sparkles: '✨', more: '📦' };
+                                          const icon = iconMap[cat?.key] || '📦';
+                                          return (
+                                            <div key={exp.id} className="py-2 flex items-center justify-between">
+                                              <div className="flex items-center space-x-2">
+                                                <span className="text-sm">{icon}</span>
+                                                <div>
+                                                  <div className="font-semibold text-gray-800 text-[11px]">{exp.note || (cat?.name || t(`categories.${cat?.key}`))}</div>
+                                                  <div className="text-[9px] text-gray-400">{cat?.name || t(`categories.${cat?.key}`)}</div>
+                                                </div>
+                                              </div>
+                                              <span className="font-bold text-[#173404] text-[11px]">
+                                                -{formatAmount(convertVal(exp.amount), curr)}
+                                              </span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
