@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SmartWallet AI — Daily Safe-Spend Limit PWA</title>
+  <link rel="manifest" href="public/manifest.json">
+  <meta name="theme-color" content="#173404">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            forest: { DEFAULT: '#173404', light: '#234a08' },
+            limeAccent: { DEFAULT: '#C0DD97', light: '#EAF3DE', vibrant: '#90C749' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React & Babel CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #F7F9F4; color: #1a1a1a; margin: 0; }
+    .font-display { font-family: 'Outfit', sans-serif; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .animate-fadeIn { animation: fadeIn 0.25s ease-out forwards; }
+    .animate-slideUp { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    /* Dark Mode High-Contrast Styles */
+    .dark-mode {
+      background-color: #0f1908 !important;
+      color: #f3f4f6 !important;
+    }
+    .dark-mode header {
+      background-color: rgba(15, 25, 8, 0.95) !important;
+      border-color: #263e18 !important;
+    }
+    .dark-mode aside {
+      background-color: #0b1703 !important;
+      border-color: #1e3a09 !important;
+    }
+    .dark-mode aside button.bg-\[\#C0DD97\],
+    .dark-mode aside .bg-\[\#C0DD97\] {
+      background-color: #90C749 !important;
+      color: #0b1703 !important;
+      font-weight: 800 !important;
+    }
+    .dark-mode aside nav button:not(.bg-\[\#90C749\]) {
+      color: #e5ecd9 !important;
+    }
+    .dark-mode .bg-white {
+      background-color: #16240d !important;
+      color: #ffffff !important;
+      border-color: #2b451c !important;
+    }
+    .dark-mode .bg-\[\#F7F9F4\] {
+      background-color: #0f1908 !important;
+    }
+    /* Fix text-[#173404] on dark background */
+    .dark-mode .text-\[\#173404\] {
+      color: #ffffff !important;
+      font-weight: 700;
+    }
+    /* Hero Card Sub-labels & Values */
+    .dark-mode .text-\[\#C0DD97\] {
+      color: #d9f99d !important;
+      font-weight: 700 !important;
+    }
+    .dark-mode .text-\[\#C0DD97\]\/80,
+    .dark-mode .text-\[\#C0DD97\]\/70 {
+      color: #c0dd97 !important;
+    }
+    .dark-mode h1, .dark-mode h2, .dark-mode h3, .dark-mode h4, .dark-mode h5, .dark-mode h6 {
+      color: #ffffff !important;
+      font-weight: 700 !important;
+    }
+    .dark-mode .text-gray-900,
+    .dark-mode .text-gray-800,
+    .dark-mode .text-gray-700,
+    .dark-mode .text-gray-600 {
+      color: #ffffff !important;
+      font-weight: 600;
+    }
+    .dark-mode .text-gray-500,
+    .dark-mode .text-gray-400 {
+      color: #cbd5e1 !important;
+      font-weight: 500;
+    }
+    .dark-mode .border-gray-100,
+    .dark-mode .border-gray-200 {
+      border-color: #284419 !important;
+    }
+    .dark-mode input,
+    .dark-mode select {
+      background-color: #0f1908 !important;
+      color: #ffffff !important;
+      border-color: #355422 !important;
+    }
+    /* Action Pills (Edit Amount / Edit End Date) */
+    .dark-mode .bg-\[\#EAF3DE\] {
+      background-color: #234410 !important;
+      color: #ffffff !important;
+      border: 1px solid #4a8819 !important;
+      font-weight: 700 !important;
+    }
+    .dark-mode .bg-\[\#EAF3DE\]:hover {
+      background-color: #305c16 !important;
+      color: #ffffff !important;
+    }
+    .dark-mode .bg-\[\#EAF3DE\]\/30,
+    .dark-mode .bg-\[\#EAF3DE\]\/40 {
+      background-color: rgba(35, 68, 16, 0.6) !important;
+    }
+    .dark-mode .bg-amber-50 {
+      background-color: #2d2006 !important;
+      border-color: #593f0b !important;
+    }
+    .dark-mode .text-amber-800,
+    .dark-mode .text-amber-900 {
+      color: #fef08a !important;
+      font-weight: 700;
+    }
+    .dark-mode .text-amber-700,
+    .dark-mode .text-amber-600 {
+      color: #fde047 !important;
+    }
+    .dark-mode .bg-red-50 {
+      background-color: #330d0d !important;
+      border-color: #661a1a !important;
+    }
+    .dark-mode .text-red-700,
+    .dark-mode .text-red-600 {
+      color: #fca5a5 !important;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function formatAmount(amount, currency = 'KRW') {
+      if (isNaN(amount) || amount === null || amount === undefined) amount = 0;
+      const rounded = Math.round(amount);
+      const formattedNumber = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return currency === 'KRW' ? `₩${formattedNumber}` : `$${formattedNumber}`;
+    }
+
+    // Live input formatter: strips non-digits, adds dot thousands separators
+    function formatInputAmount(val) {
+      if (val === null || val === undefined || val === '') return '';
+      const digits = String(val).replace(/\D/g, '');
+      if (!digits) return '';
+      return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    // Parse dot-formatted string back to raw integer
+    function parseInputAmount(val) {
+      if (typeof val === 'number') return isNaN(val) ? 0 : val;
+      const digits = String(val).replace(/\D/g, '');
+      return digits ? parseInt(digits, 10) : 0;
+    }
+
+    /**
+     * SINGLE SHARED FUNCTION — used by both Home and Analytics.
+     * Computes all cycle stats from the same logic, no duplication.
+     *
+     * @param {Object|null} cycle       - The active cycle object {startDate, days, totalAmount}
+     * @param {Array}        allExpenses - Full expenses array
+     * @param {string|null}  rangeStart  - Optional date filter start (YYYY-MM-DD). Null = use cycle start.
+     * @param {string|null}  rangeEnd    - Optional date filter end (YYYY-MM-DD). Null = use cycle end.
+     * @returns {Object} { totalSpent, balanceRemaining, daysInRange, daysRemaining, dailyLimit, avgDaily, cycleEndDate, filteredExpenses }
+     */
+    function getActiveCycleStats(cycle, allExpenses, rangeStart, rangeEnd) {
+      // Compute cycle end date from stored data (local-time safe)
+      let cycleEnd = null;
+      if (cycle) {
+        const [y, m, d] = cycle.startDate.split('-').map(Number);
+        cycleEnd = new Date(y, m - 1, d + cycle.days);
+      }
+      const cycleEndStr = cycleEnd ? cycleEnd.toISOString().split('T')[0] : null;
+
+      // Resolve the effective range
+      const effectiveStart = rangeStart || (cycle ? cycle.startDate : new Date().toISOString().split('T')[0]);
+      const effectiveEnd   = rangeEnd   || (cycleEndStr || new Date().toISOString().split('T')[0]);
+
+      // Filter expenses within the date range
+      const filteredExpenses = allExpenses.filter(exp => {
+        const d = exp.date ? exp.date.split('T')[0] : '';
+        return d >= effectiveStart && d <= effectiveEnd;
+      });
+
+      const totalSpent = filteredExpenses.reduce((s, e) => s + e.amount, 0);
+      const balanceRemaining = cycle ? cycle.totalAmount - totalSpent : 0;
+
+      // Parse range dates in local time to avoid UTC drift
+      const [sy, sm, sd] = effectiveStart.split('-').map(Number);
+      const [ey, em, ed] = effectiveEnd.split('-').map(Number);
+      const startD = new Date(sy, sm - 1, sd);
+      const endD   = new Date(ey, em - 1, ed);
+      const today  = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const daysInRange    = Math.max(1, Math.ceil((endD - startD) / (1000 * 60 * 60 * 24)));
+      const daysRemaining  = Math.max(1, Math.ceil((endD - today)  / (1000 * 60 * 60 * 24)));
+      const dailyLimit     = Math.max(0, balanceRemaining / daysRemaining);
+      const avgDaily       = totalSpent / Math.max(1, daysInRange);
+
+      return {
+        totalSpent,
+        balanceRemaining,
+        daysInRange,
+        daysRemaining,
+        dailyLimit,
+        avgDaily,
+        cycleEndDate: cycleEndStr,
+        filteredExpenses,
+      };
+    }
+
+    const translations = {
+      en: {
+        appName: "SmartWallet AI",
+        tagline: "Your daily safe spending guide",
+        nav: {
+          home: "Home",
+          analytics: "Analytics",
+          categories: "Categories",
+          profile: "Profile",
+          logExpense: "+ Log Expense"
+        },
+        dashboard: {
+          home: "Home Dashboard",
+          analytics: "Analytics Dashboard",
+          categories: "Categories Dashboard",
+          profile: "Profile & Settings"
+        },
+        hero: {
+          dailySafeSpend: "You can spend",
+          todayLabel: "today",
+          daysLeft: "days left in cycle",
+          totalBalance: "Balance Remaining",
+          withinBudget: "Within limit 🔥"
+        },
+        cycleSetup: {
+          title: "Start New Budget Cycle",
+          blockingPrompt: "Enter how much money you have for this cycle to unlock your daily safe-spend limit.",
+          amountLabel: "How much money do you have for this cycle?",
+          startDateLabel: "Start Date",
+          durationLabel: "Custom Cycle Duration",
+          nextIncomeDate: "Next Income Date",
+          customDays: "Custom Days",
+          incomePrompt: "When does your next income / allowance arrive?",
+          daysPrompt: "Type exact number of days (e.g. 8, 12, 23):",
+          calculatedLength: "Calculated Cycle Length:",
+          confirmButton: "Start Budget Cycle",
+          editEndTitle: "Edit Cycle End Date",
+          editAmountTitle: "Edit Budget Amount",
+          newEndLabel: "New Cycle End Date",
+          totalBudgetLabel: "Total Budget Amount",
+          saveEndButton: "Save End Date",
+          saveAmountButton: "Save Amount",
+          cancel: "Cancel"
+        },
+        expense: {
+          quickAddHeader: "Log New Expense",
+          editHeader: "Edit Expense",
+          amountLabel: "Amount Spent",
+          categoryLabel: "Select Category",
+          noteLabel: "Note (Optional)",
+          notePlaceholder: "e.g. Campus cafeteria lunch",
+          tapHint: "Tap a category above to select",
+          saveButton: "Log Expense"
+        },
+        recentExpenses: {
+          title: "Recent Expenses",
+          addLink: "+ Log Expense"
+        },
+        analytics: {
+          title: "Analytics Overview",
+          totalSpent: "Total Spent",
+          avgDaily: "Avg Daily Spend",
+          daysRemaining: "Days in Range",
+          ranking: "Category Spending Ranking",
+          noExpensesYet: "No expenses yet",
+          insightFood: "Food & Dining represents over 40% of your current cycle spending. Prepare meals to save budget!"
+        },
+        categoriesPage: {
+          title: "Categories",
+          count: "Categories",
+          addCard: "+ Add category",
+          createTitle: "Create Custom Category",
+          nameLabel: "Category Name",
+          placeholder: "e.g. Gym & Fitness",
+          saveButton: "Save Category",
+          noExpenses: "No expenses yet"
+        },
+        profilePage: {
+          title: "Settings & Preferences",
+          displayCurrency: "Display Currency",
+          themeMode: "App Theme",
+          currentCycle: "Current Cycle",
+          start: "Start",
+          end: "End",
+          budget: "Budget",
+          daysLeft: "Days Left",
+          editAmount: "✏️ Edit Amount",
+          editEndDate: "✏️ Edit End Date",
+          endEarly: "End Cycle Early",
+          startNewCycle: "Start New Budget Cycle",
+          historyTitle: "Cycle History",
+          tapToExpand: "Tap to expand details",
+          deleteRecord: "Delete Cycle Record"
+        },
+        expiredBanner: {
+          title: "Cycle ended — start a new one",
+          desc: "Your active budget cycle has reached its end date. Start a new cycle to keep tracking.",
+          action: "Start New Budget Cycle"
+        },
+        activeCycleBar: {
+          title: "Active Cycle",
+          editAmount: "✏️ Edit Amount",
+          editEndDate: "✏️ Edit End Date",
+          length: "Length:",
+          endEarly: "End Cycle Early"
+        },
+        categories: {
+          utensils: "Food & Dining",
+          bus: "Transport",
+          book: "Study & Books",
+          gamepad: "Entertainment",
+          shopping: "Shopping",
+          receipt: "Bills & Utilities",
+          sparkles: "Personal Care",
+          more: "Miscellaneous"
+        }
+      },
+      uz: {
+        appName: "SmartWallet AI",
+        tagline: "Kunlik xavfsiz xarajat ko'rsatgichingiz",
+        nav: {
+          home: "Bosh sahifa",
+          analytics: "Tahlil",
+          categories: "Kategoriyalar",
+          profile: "Profil",
+          logExpense: "+ Xarajat Kiritish"
+        },
+        dashboard: {
+          home: "Bosh Sahifa",
+          analytics: "Tahlil Sahifasi",
+          categories: "Kategoriyalar Sahifasi",
+          profile: "Profil va Sozlamalar"
+        },
+        hero: {
+          dailySafeSpend: "Bugun sarflashingiz mumkin",
+          todayLabel: "bugun",
+          daysLeft: "tsiklda qolgan kunlar",
+          totalBalance: "Qolgan balans",
+          withinBudget: "Limit ichida 🔥"
+        },
+        cycleSetup: {
+          title: "Yangi Byudjet Tsiklini Boshlash",
+          blockingPrompt: "Kunlik xavfsiz xarajat limitini aniqlash uchun ushbu tsikl uchun qancha mablag'ingiz borligini kiriting.",
+          amountLabel: "Ushbu tsikl uchun qancha pulingiz bor?",
+          startDateLabel: "Boshlanish sanasi",
+          durationLabel: "Moslashtirilgan Tsikl Davomiyligi",
+          nextIncomeDate: "Navbatdagi Daromad Sanasi",
+          customDays: "Kunlar Soni",
+          incomePrompt: "Navbatdagi daromad / stipendiya qachon keladi?",
+          daysPrompt: "Aniq kunlar sonini kiriting (masalan, 8, 12, 23):",
+          calculatedLength: "Hisoblangan Tsikl Davomiyligi:",
+          confirmButton: "Tsiklni Boshlash",
+          editEndTitle: "Tsikl Tugash Sanasini Tahrirlash",
+          editAmountTitle: "Byudjet Summasini Tahrirlash",
+          newEndLabel: "Yangi Tugash Sanasi",
+          totalBudgetLabel: "Jami Byudjet Summasi",
+          saveEndButton: "Sanasini Saqlash",
+          saveAmountButton: "Summani Saqlash",
+          cancel: "Bekor qilish"
+        },
+        expense: {
+          quickAddHeader: "Yangi Xarajat Kiritish",
+          editHeader: "Xarajatni Tahrirlash",
+          amountLabel: "Sarflangan summa",
+          categoryLabel: "Kategoriyani tanlang",
+          noteLabel: "Eslatma (Ixtiyoriy)",
+          notePlaceholder: "masalan, Universitet tushligi",
+          tapHint: "Tanlash uchun yuqoridagi kategoriyaga bosing",
+          saveButton: "Xarajatni Saqlash"
+        },
+        recentExpenses: {
+          title: "Oxirgi Xarajatlar",
+          addLink: "+ Xarajat Kiritish"
+        },
+        analytics: {
+          title: "Tahlil Sharhi",
+          totalSpent: "Jami Sarflangan",
+          avgDaily: "O'rtacha Kunlik",
+          daysRemaining: "Oraliqdagi Kunlar",
+          ranking: "Kategoriya Bo'yicha Reyting",
+          noExpensesYet: "Hali xarajatlar yo'q",
+          insightFood: "Ovqat va Restoranlar joriy tsikldagi xarajatlaringizning 40% dan ortig'ini tashkil qiladi."
+        },
+        categoriesPage: {
+          title: "Kategoriyalar",
+          count: "Kategoriyalar",
+          addCard: "+ Kategoriya qo'shish",
+          createTitle: "Yangi Kategoriya Yaratish",
+          nameLabel: "Kategoriya Nomi",
+          placeholder: "masalan, Sport zal",
+          saveButton: "Kategoriyani Saqlash",
+          noExpenses: "Hali xarajatlar yo'q"
+        },
+        profilePage: {
+          title: "Sozlamalar va Afzalliklar",
+          displayCurrency: "Displey Valyutasi",
+          themeMode: "Ilova Mavzusi",
+          currentCycle: "Joriy Tsikl",
+          start: "Boshlanishi",
+          end: "Tugashi",
+          budget: "Byudjet",
+          daysLeft: "Qolgan kunlar",
+          editAmount: "✏️ Summani Tahrirlash",
+          editEndDate: "✏️ Sanani Tahrirlash",
+          endEarly: "Vaqtidan Oldin Tugatish",
+          startNewCycle: "Yangi Byudjet Tsiklini Boshlash",
+          historyTitle: "Tsikllar Tarixi",
+          tapToExpand: "Tafsilotlarni ko'rish uchun bosing",
+          deleteRecord: "Tsikl Yozuvini O'chirish"
+        },
+        expiredBanner: {
+          title: "Tsikl tugadi — yangisini boshlang",
+          desc: "Sizning faol byudjet tsiklingiz tugash sanasiga yetdi. Kuzatishni davom ettirish uchun yangi tsikl boshlang.",
+          action: "Yangi Byudjet Tsiklini Boshlash"
+        },
+        activeCycleBar: {
+          title: "Faol Tsikl",
+          editAmount: "✏️ Summani Tahrirlash",
+          editEndDate: "✏️ Sanani Tahrirlash",
+          length: "Davomiyligi:",
+          endEarly: "Vaqtidan Oldin Tugatish"
+        },
+        categories: {
+          utensils: "Ovqat va Restoranlar",
+          bus: "Transport",
+          book: "O'qish va Kitoblar",
+          gamepad: "Kengayish va O'yinlar",
+          shopping: "Xaridlar",
+          receipt: "Kommunal to'lovlar",
+          sparkles: "Shaxsiy Parvarish",
+          more: "Boshqa"
+        }
+      }
+    };
+
+    const INITIAL_CATS = [
+      { id: 'c1', key: 'utensils', name: 'Food & Dining' },
+      { id: 'c2', key: 'bus', name: 'Transport' },
+      { id: 'c3', key: 'book', name: 'Study & Books' },
+      { id: 'c4', key: 'gamepad', name: 'Entertainment' },
+      { id: 'c5', key: 'shopping', name: 'Shopping' },
+      { id: 'c6', key: 'receipt', name: 'Bills & Utilities' },
+      { id: 'c7', key: 'sparkles', name: 'Personal Care' },
+      { id: 'c8', key: 'more', name: 'Miscellaneous' },
+    ];
+
+    function App() {
+      const [lang, setLang] = useState(() => localStorage.getItem('sw_lang') || 'en');
+      const [curr, setCurr] = useState(() => localStorage.getItem('sw_curr') || 'KRW');
+      const [theme, setTheme] = useState(() => localStorage.getItem('sw_theme') || 'light');
+      
+      const [usdToKrwRate, setUsdToKrwRate] = useState(1467);
+      const [rateLastUpdated, setRateLastUpdated] = useState('12:00');
+
+      useEffect(() => {
+        const cached = localStorage.getItem('sw_rate_cache');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (Date.now() - parsed.time < 4 * 60 * 60 * 1000) {
+              setUsdToKrwRate(parsed.rate);
+              setRateLastUpdated(parsed.updatedStr);
+              return;
+            }
+          } catch(e){}
+        }
+
+        fetch('https://open.er-api.com/v6/latest/USD')
+          .then(r => r.json())
+          .then(data => {
+            if (data && data.rates && data.rates.KRW) {
+              const r = data.rates.KRW;
+              const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              setUsdToKrwRate(r);
+              setRateLastUpdated(timeStr);
+              localStorage.setItem('sw_rate_cache', JSON.stringify({ rate: r, updatedStr: timeStr, time: Date.now() }));
+            }
+          })
+          .catch(() => {});
+      }, []);
+
+      const [cycle, setCycle] = useState(() => {
+        const saved = localStorage.getItem('sw_cycle');
+        return saved ? JSON.parse(saved) : null;
+      });
+
+      const [categories, setCategories] = useState(() => {
+        const saved = localStorage.getItem('sw_categories');
+        return saved ? JSON.parse(saved) : INITIAL_CATS;
+      });
+
+      const [expenses, setExpenses] = useState(() => {
+        const saved = localStorage.getItem('sw_expenses');
+        return saved ? JSON.parse(saved) : [
+          { id: '1', amount: 8500, catId: 'c1', note: 'Campus Cafeteria Lunch', date: new Date().toISOString() },
+          { id: '2', amount: 1400, catId: 'c2', note: 'Subway Card', date: new Date().toISOString() }
+        ];
+      });
+
+      const [showCycleModal, setShowCycleModal] = useState(!cycle);
+      const [showExpenseModal, setShowExpenseModal] = useState(false);
+      const [editingExpenseId, setEditingExpenseId] = useState(null); // null = new, id = editing
+      const [showAddCatModal, setShowAddCatModal] = useState(false);
+      const [showEditCycleModal, setShowEditCycleModal] = useState(false);
+      const [showEditCycleAmountModal, setShowEditCycleAmountModal] = useState(false);
+      const [editCycleAmountValue, setEditCycleAmountValue] = useState('');
+      const [activeTab, setActiveTab] = useState('home');
+      const [selectedCatFilter, setSelectedCatFilter] = useState(null);
+      const [expandedHistoryId, setExpandedHistoryId] = useState(null);
+
+      // Cycle history — preserved old cycles
+      const [cycleHistory, setCycleHistory] = useState(() => {
+        const saved = localStorage.getItem('sw_cycle_history');
+        return saved ? JSON.parse(saved) : [];
+      });
+
+      const [setupAmount, setSetupAmount] = useState('');
+      const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+      const [durationMode, setDurationMode] = useState('endDate');
+      const [nextIncomeDate, setNextIncomeDate] = useState(
+        new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      );
+      const [customDays, setCustomDays] = useState('12');
+
+      const [newCatName, setNewCatName] = useState('');
+
+      const [expAmount, setExpAmount] = useState('');
+      const [expCat, setExpCat] = useState('c1');
+      const [expNote, setExpNote] = useState('');
+
+      // Analytics date-range picker — defaults to the active cycle's actual range
+      const initCycleEnd = cycle ? (() => {
+        const [y, m, d] = cycle.startDate.split('-').map(Number);
+        return new Date(y, m - 1, d + cycle.days).toISOString().split('T')[0];
+      })() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const [analyticsStart, setAnalyticsStart] = useState(cycle?.startDate || startDate);
+      const [analyticsEnd, setAnalyticsEnd] = useState(initCycleEnd);
+
+      useEffect(() => { localStorage.setItem('sw_lang', lang); }, [lang]);
+      useEffect(() => { localStorage.setItem('sw_curr', curr); }, [curr]);
+      useEffect(() => { localStorage.setItem('sw_theme', theme); }, [theme]);
+
+      useEffect(() => {
+        if (cycle) localStorage.setItem('sw_cycle', JSON.stringify(cycle));
+        else localStorage.removeItem('sw_cycle');
+      }, [cycle]);
+
+      useEffect(() => {
+        localStorage.setItem('sw_expenses', JSON.stringify(expenses));
+      }, [expenses]);
+
+      useEffect(() => {
+        localStorage.setItem('sw_categories', JSON.stringify(categories));
+      }, [categories]);
+
+      useEffect(() => {
+        localStorage.setItem('sw_cycle_history', JSON.stringify(cycleHistory));
+      }, [cycleHistory]);
+
+      useEffect(() => {
+        if (window.lucide) lucide.createIcons();
+      });
+
+      const t = (path) => {
+        const keys = path.split('.');
+        let cur = translations[lang] || translations.en;
+        for (const k of keys) {
+          if (cur && cur[k]) cur = cur[k];
+          else return path;
+        }
+        return cur;
+      };
+
+      const getCalculatedDays = () => {
+        if (durationMode === 'customDays') {
+          const parsed = parseInt(customDays, 10);
+          return isNaN(parsed) || parsed < 1 ? 1 : parsed;
+        } else {
+          const s = new Date(startDate);
+          const e = new Date(nextIncomeDate);
+          const diffDays = Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24));
+          return Math.max(1, diffDays);
+        }
+      };
+
+      const calculatedDays = getCalculatedDays();
+
+      const entryCurrency = cycle?.entryCurrency || 'KRW';
+
+      const convertVal = (amt) => {
+        if (entryCurrency === curr) return amt;
+        if (entryCurrency === 'USD' && curr === 'KRW') return amt * usdToKrwRate;
+        if (entryCurrency === 'KRW' && curr === 'USD') return amt / usdToKrwRate;
+        return amt;
+      };
+
+      const isConverted = entryCurrency !== curr;
+
+      // ── HOME STATS — calls the shared function with the full cycle range ──
+      const homeStats = getActiveCycleStats(cycle, expenses, null, null);
+      const { totalSpent, balanceRemaining, daysRemaining, dailyLimit: dailySafeLimit } = homeStats;
+      const cycleEndDate = homeStats.cycleEndDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      // Detect if cycle has expired
+      const isCycleExpired = cycle ? (() => {
+        const [ey, em, ed] = cycleEndDate.split('-').map(Number);
+        const end = new Date(ey, em - 1, ed);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return today >= end;
+      })() : false;
+
+      // State for editing cycle end date
+      const [editCycleEndValue, setEditCycleEndValue] = useState(cycleEndDate);
+
+      const handleStartCycle = (e) => {
+        e.preventDefault();
+        const amt = parseFloat(setupAmount.replace(/,/g, ''));
+        if (!amt || amt <= 0) return;
+        // Archive old cycle if exists
+        if (cycle) {
+          setCycleHistory([...cycleHistory, { ...cycle, is_active: false, expenses: expenses }]);
+        }
+        setCycle({ id: Date.now().toString(), totalAmount: amt, days: calculatedDays, startDate, entryCurrency: curr, is_active: true });
+        setExpenses([]);
+        setShowCycleModal(false);
+      };
+
+      // Edit the active cycle's end date — recalculates days from startDate
+      const handleEditCycleEndDate = (newEndDate) => {
+        if (!cycle) return;
+        const [sy, sm, sd] = cycle.startDate.split('-').map(Number);
+        const [ey, em, ed] = newEndDate.split('-').map(Number);
+        const start = new Date(sy, sm - 1, sd);
+        const end = new Date(ey, em - 1, ed);
+        const newDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+        setCycle({ ...cycle, days: newDays });
+        setShowEditCycleModal(false);
+      };
+
+      // Edit the active cycle's total budget amount
+      const handleEditCycleAmount = (newAmountStr) => {
+        if (!cycle) return;
+        const newAmt = parseInputAmount(newAmountStr);
+        if (!newAmt || newAmt <= 0) return;
+        setCycle({ ...cycle, totalAmount: newAmt });
+        setShowEditCycleAmountModal(false);
+      };
+
+      // End current cycle early and prompt for new one
+      const handleEndCycleEarly = () => {
+        if (!cycle) return;
+        setCycleHistory([...cycleHistory, { ...cycle, is_active: false, expenses: expenses }]);
+        setCycle(null);
+        setExpenses([]);
+        setShowCycleModal(true);
+      };
+
+      const handleAddExpense = (e) => {
+        e.preventDefault();
+        const amt = parseInputAmount(expAmount);
+        if (!amt || amt <= 0 || !expCat) return;
+
+        if (editingExpenseId) {
+          // UPDATE existing expense in-place (no duplicate)
+          setExpenses(expenses.map(exp =>
+            exp.id === editingExpenseId
+              ? { ...exp, amount: amt, catId: expCat, note: expNote }
+              : exp
+          ));
+        } else {
+          // CREATE new expense
+          setExpenses([{ id: Date.now().toString(), amount: amt, catId: expCat, note: expNote, date: new Date().toISOString() }, ...expenses]);
+        }
+        setExpAmount('');
+        setExpNote('');
+        setExpCat('');
+        setEditingExpenseId(null);
+        setShowExpenseModal(false);
+      };
+
+      const handleEditExpense = (exp) => {
+        setEditingExpenseId(exp.id);
+        setExpCat(exp.catId);
+        setExpAmount(formatInputAmount(exp.amount));
+        setExpNote(exp.note || '');
+        setShowExpenseModal(true);
+      };
+
+      const handleDeleteExpense = (expId) => {
+        setExpenses(expenses.filter(e => e.id !== expId));
+      };
+
+      const handleDeleteHistoryCycle = (cycleId, e) => {
+        if (e) e.stopPropagation();
+        if (window.confirm("Delete this cycle and its expenses? This can't be undone.")) {
+          setCycleHistory(cycleHistory.filter(c => c.id !== cycleId));
+        }
+      };
+
+      const handleAddCategory = (e) => {
+        e.preventDefault();
+        if (!newCatName.trim()) return;
+        const newCat = { id: `c-custom-${Date.now()}`, key: 'more', name: newCatName.trim(), isCustom: true };
+        setCategories([...categories, newCat]);
+        setNewCatName('');
+        setShowAddCatModal(false);
+      };
+
+      return (
+        <div className={`min-h-screen ${theme === 'dark' ? 'dark-mode bg-[#121c0b] text-[#e5ecd9]' : 'bg-[#F7F9F4] text-gray-900'} flex flex-col lg:flex-row`}>
+          
+          {/* DESKTOP SIDEBAR NAVIGATION */}
+          <aside className="hidden lg:flex flex-col w-64 bg-[#173404] text-white p-6 justify-between min-h-screen sticky top-0 border-r border-[#265307] shadow-xl shrink-0">
+            <div className="space-y-8">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 rounded-xl bg-[#90C749] text-[#173404] flex items-center justify-center font-bold font-display text-lg">S</div>
+                  <h1 className="text-xl font-bold tracking-tight font-display text-white">SmartWallet <span className="text-xs px-1.5 py-0.5 rounded bg-[#C0DD97] text-[#173404]">AI</span></h1>
+                </div>
+                <p className="text-xs text-[#C0DD97]/80 mt-1">{t('tagline')}</p>
+              </div>
+
+              <nav className="space-y-2">
+                {[
+                  { id: 'home', label: t('nav.home') },
+                  { id: 'analytics', label: t('nav.analytics') },
+                  { id: 'categories', label: t('nav.categories') },
+                  { id: 'profile', label: t('nav.profile') }
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all ${activeTab === item.id ? 'bg-[#90C749] text-[#173404] font-bold shadow-md' : 'text-white/80 hover:bg-white/10'}`}
+                  >
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </nav>
+
+              <button
+                onClick={() => setShowExpenseModal(true)}
+                className="w-full py-3.5 px-4 bg-[#C0DD97] hover:bg-[#90C749] text-[#173404] font-bold rounded-2xl shadow-lg transition-all text-sm flex items-center justify-center space-x-1"
+              >
+                <span>{t('nav.logExpense')}</span>
+              </button>
+            </div>
+
+            <div className="pt-4 border-t border-[#265307] text-xs text-[#C0DD97]/70">
+              <span className="text-white font-semibold">{t('appName')}</span>
+            </div>
+          </aside>
+
+          <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-12">
+            
+            <header className="sticky top-0 z-30 bg-[#F7F9F4]/90 backdrop-blur-md px-4 sm:px-8 py-4 flex items-center justify-between border-b border-gray-200">
+              <div className="lg:hidden">
+                <h1 className="text-lg font-bold text-[#173404] tracking-tight font-display flex items-center space-x-1.5">
+                  <span>SmartWallet</span>
+                  <span className="text-[10px] uppercase px-1.5 py-0.5 rounded bg-[#C0DD97] text-[#173404] font-semibold">AI</span>
+                </h1>
+                <p className="text-[11px] text-gray-500 font-medium">{t('tagline')}</p>
+              </div>
+
+              <div className="hidden lg:block">
+                <h2 className="text-lg font-bold text-[#173404] capitalize">{t(`dashboard.${activeTab}`)}</h2>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setCurr(curr === 'KRW' ? 'USD' : 'KRW')}
+                  className={`px-3 py-1.5 rounded-full border text-xs font-bold shadow-xs transition-colors ${
+                    theme === 'dark' ? 'bg-[#1a2a11] border-[#2d451e] text-[#C0DD97]' : 'bg-white border-gray-200 text-[#173404]'
+                  }`}
+                >
+                  {curr === 'KRW' ? 'KRW (₩)' : 'USD ($)'}
+                </button>
+
+                <button
+                  onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                  className={`px-3 py-1.5 rounded-full border text-xs font-bold shadow-xs transition-colors ${
+                    theme === 'dark' ? 'bg-[#1a2a11] border-[#2d451e] text-[#C0DD97]' : 'bg-white border-gray-200 text-[#173404]'
+                  }`}
+                  title="Toggle Light / Dark Mode"
+                >
+                  {theme === 'dark' ? '🌙 Dark' : '☀️ Light'}
+                </button>
+
+                <div className={`inline-flex items-center border shadow-xs rounded-full p-1 ${
+                  theme === 'dark' ? 'bg-[#1a2a11] border-[#2d451e]' : 'bg-white border-gray-200'
+                }`}>
+                  <button
+                    onClick={() => setLang('en')}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-full transition-colors ${lang === 'en' ? 'bg-[#173404] text-[#EAF3DE]' : 'text-gray-400'}`}
+                  >
+                    EN
+                  </button>
+                  <button
+                    onClick={() => setLang('uz')}
+                    className={`px-2.5 py-1 text-xs font-semibold rounded-full transition-colors ${lang === 'uz' ? 'bg-[#173404] text-[#EAF3DE]' : 'text-gray-400'}`}
+                  >
+                    UZ
+                  </button>
+                </div>
+              </div>
+            </header>
+
+            <main className="p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto space-y-6 flex-1">
+              {activeTab === 'home' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  <div className="lg:col-span-7 space-y-6">
+                    <div className="relative overflow-hidden bg-[#173404] text-white rounded-[20px] p-6 shadow-xl border border-[#265307]">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#90C749] animate-pulse"></span>
+                          <span className="text-xs uppercase tracking-wider font-medium text-[#C0DD97]">{t('hero.dailySafeSpend')}</span>
+                        </div>
+                        <div className="inline-flex items-center space-x-1 bg-[#EAF3DE] text-[#173404] px-3 py-1 rounded-full text-xs font-semibold">
+                          <span>🔥 5 day streak</span>
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <div className="text-[36px] sm:text-[44px] font-medium leading-none font-display tracking-tight text-white">
+                          {formatAmount(convertVal(dailySafeLimit), curr)}
+                        </div>
+                        <div className="text-xs text-[#C0DD97] mt-1.5">{t('hero.todayLabel')} &bull; {t('hero.withinBudget')}</div>
+
+                        {isConverted && (
+                          <div className="mt-2 inline-flex text-[11px] bg-[#C0DD97]/20 text-[#C0DD97] px-2.5 py-0.5 rounded border border-[#C0DD97]/30">
+                            Converted (rate as of {rateLastUpdated} — 1 USD = {formatAmount(usdToKrwRate, 'KRW')})
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-[#2a5509]">
+                        <div className="bg-white/5 rounded-xl p-2.5">
+                          <div className="text-[10px] uppercase text-[#C0DD97]">{t('hero.daysLeft')}</div>
+                          <div className="text-sm font-semibold">{daysRemaining} days</div>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-2.5">
+                          <div className="text-[10px] uppercase text-[#C0DD97]">{t('hero.totalBalance')}</div>
+                          <div className="text-sm font-semibold">{formatAmount(convertVal(balanceRemaining), curr)}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CYCLE EXPIRED BANNER */}
+                    {isCycleExpired && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-[20px] p-4 space-y-3 shadow-xs">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">⏰</span>
+                          <div>
+                            <div className="text-sm font-bold text-amber-900">{t('expiredBanner.title')}</div>
+                            <div className="text-xs text-amber-700 mt-0.5">{t('expiredBanner.desc')} ({cycleEndDate})</div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setShowCycleModal(true)}
+                          className="w-full py-2.5 bg-[#173404] hover:bg-[#234a08] text-[#EAF3DE] font-semibold rounded-xl text-xs shadow-md transition-all"
+                        >
+                          {t('expiredBanner.action')}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* ACTIVE CYCLE CONTROL BAR */}
+                    {cycle && !isCycleExpired && (
+                      <div className="bg-white rounded-[20px] p-4 shadow-sm border border-gray-100 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm">📅</span>
+                            <span className="text-xs font-bold text-[#173404]">{t('activeCycleBar.title')} ({cycle.startDate} → {cycleEndDate})</span>
+                          </div>
+                          <div className="flex items-center space-x-1.5">
+                            <button
+                              onClick={() => { setEditCycleAmountValue(formatInputAmount(cycle.totalAmount)); setShowEditCycleAmountModal(true); }}
+                              className="text-[11px] font-semibold text-[#173404] bg-[#EAF3DE] hover:bg-[#C0DD97] px-2.5 py-1 rounded-lg transition-all"
+                            >
+                              {t('activeCycleBar.editAmount')}
+                            </button>
+                            <button
+                              onClick={() => { setEditCycleEndValue(cycleEndDate); setShowEditCycleModal(true); }}
+                              className="text-[11px] font-semibold text-[#173404] bg-[#EAF3DE] hover:bg-[#C0DD97] px-2.5 py-1 rounded-lg transition-all"
+                            >
+                              {t('activeCycleBar.editEndDate')}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-50">
+                          <span>{t('activeCycleBar.length')} {cycle.days} days</span>
+                          <button
+                            onClick={handleEndCycleEarly}
+                            className="text-red-600 hover:text-red-800 font-semibold"
+                          >
+                            {t('activeCycleBar.endEarly')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="lg:col-span-5 space-y-6">
+                    <div className="bg-white rounded-[20px] p-5 shadow-sm border border-gray-100 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-bold text-[#173404]">{t('recentExpenses.title')}</h4>
+                        <button onClick={() => setShowExpenseModal(true)} className="text-xs font-semibold text-[#173404]">
+                          {t('recentExpenses.addLink')}
+                        </button>
+                      </div>
+                      <div className="divide-y divide-gray-100 max-h-[360px] overflow-y-auto">
+                        {expenses.map((exp) => {
+                          const cat = categories.find(c => c.id === exp.catId) || INITIAL_CATS.find(c => c.id === exp.catId);
+                          const iconMap = { utensils: '🍜', bus: '🚌', book: '📚', gamepad: '🎮', shopping: '🛒', receipt: '🧾', sparkles: '✨', more: '📦' };
+                          const icon = iconMap[cat?.key] || '📦';
+                          return (
+                            <div key={exp.id} className="py-3 flex items-center justify-between group">
+                              <div className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer" onClick={() => handleEditExpense(exp)}>
+                                <div className="w-9 h-9 rounded-full bg-[#EAF3DE] text-[#173404] flex items-center justify-center text-base shrink-0">
+                                  {icon}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-semibold text-gray-900 truncate">{exp.note || (cat?.name || t(`categories.${cat?.key}`))}</div>
+                                  <div className="text-[10px] text-gray-500">{cat?.name || t(`categories.${cat?.key}`)}</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2 shrink-0">
+                                <span className="text-xs font-bold text-[#173404]">-{formatAmount(convertVal(exp.amount), curr)}</span>
+                                {/* Edit pencil */}
+                                <button
+                                  onClick={() => handleEditExpense(exp)}
+                                  className="p-1.5 rounded-lg text-gray-300 hover:text-[#173404] hover:bg-[#EAF3DE] transition-all opacity-0 group-hover:opacity-100"
+                                  title="Edit"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                </button>
+                                {/* Delete trash */}
+                                <button
+                                  onClick={() => handleDeleteExpense(exp.id)}
+                                  className="p-1.5 rounded-lg text-gray-300 hover:text-red-600 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                                  title="Delete"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ANALYTICS TAB PAGE */}
+              {activeTab === 'analytics' && (() => {
+                // ── ANALYTICS STATS — calls the SAME shared function with user-selected range ──
+                const analyticsStats = getActiveCycleStats(cycle, expenses, analyticsStart, analyticsEnd);
+                const { totalSpent: filteredTotal, daysInRange: rangeDays, daysRemaining: rangeDaysRemaining, avgDaily: filteredAvgDaily, filteredExpenses } = analyticsStats;
+
+                return (
+                <div className="space-y-6 animate-fadeIn">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <h2 className="text-lg font-bold text-[#173404]">{t('analytics.title')}</h2>
+                    {/* LIVE DATE-RANGE PICKER */}
+                    <div className="flex items-center space-x-2 bg-white border border-gray-200 rounded-2xl px-3 py-2 shadow-xs">
+                      <input
+                        type="date"
+                        value={analyticsStart}
+                        onChange={(e) => setAnalyticsStart(e.target.value)}
+                        className="bg-transparent text-xs font-bold text-[#173404] outline-none w-[120px]"
+                      />
+                      <span className="text-xs text-gray-400 font-medium">→</span>
+                      <input
+                        type="date"
+                        value={analyticsEnd}
+                        min={analyticsStart}
+                        onChange={(e) => setAnalyticsEnd(e.target.value)}
+                        className="bg-transparent text-xs font-bold text-[#173404] outline-none w-[120px]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* SUMMARY STAT ROW — uses filtered data */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-white rounded-[20px] p-4 shadow-sm border flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#EAF3DE] text-[#173404] flex items-center justify-center font-bold">₩</div>
+                      <div>
+                        <div className="text-[10px] uppercase text-gray-500">{t('analytics.totalSpent')}</div>
+                        <div className="text-base font-bold text-[#173404]">{formatAmount(convertVal(filteredTotal), curr)}</div>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-[20px] p-4 shadow-sm border flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#EAF3DE] text-[#173404] flex items-center justify-center font-bold">📈</div>
+                      <div>
+                        <div className="text-[10px] uppercase text-gray-500">{t('analytics.avgDaily')}</div>
+                        <div className="text-base font-bold text-[#173404]">{formatAmount(convertVal(filteredAvgDaily), curr)} / day</div>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-[20px] p-4 shadow-sm border flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#EAF3DE] text-[#173404] flex items-center justify-center font-bold">⏳</div>
+                      <div>
+                        <div className="text-[10px] uppercase text-gray-500">{t('analytics.daysRemaining')}</div>
+                        <div className="text-base font-bold text-[#173404]">{rangeDays} days ({rangeDaysRemaining} remaining)</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SMART INSIGHT CALLOUT CARDS */}
+                  {filteredTotal > 0 && (
+                    <div className="bg-[#EAF3DE] border border-[#C0DD97] p-3.5 rounded-[18px] text-xs text-[#173404] font-medium flex items-center space-x-2">
+                      <span>💡</span>
+                      <span>{t('analytics.insightFood')}</span>
+                    </div>
+                  )}
+
+                  <div className="bg-white rounded-[20px] p-5 shadow-sm border space-y-3">
+                    <h4 className="text-sm font-bold text-[#173404]">{t('analytics.ranking')}</h4>
+                    <div className="space-y-2">
+                      {categories.map((cat) => {
+                        const catSum = filteredExpenses.filter(e => e.catId === cat.id).reduce((s, e) => s + e.amount, 0);
+                        const pct = filteredTotal > 0 ? Math.round((catSum / filteredTotal) * 100) : 0;
+                        return (
+                          <div key={cat.id} className="flex justify-between items-center text-xs py-1">
+                            <span className="font-semibold">{cat.name || t(`categories.${cat.key}`)}</span>
+                            <span className="font-bold text-[#173404]">{catSum > 0 ? formatAmount(convertVal(catSum), curr) : t('analytics.noExpensesYet')} ({pct}%)</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+                );
+              })()}
+
+              {/* CATEGORIES TAB PAGE */}
+              {activeTab === 'categories' && (
+                <div className="space-y-6 animate-fadeIn">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-lg font-bold text-[#173404]">{t('categoriesPage.title')}</h2>
+                    <span className="text-xs text-gray-500 font-medium">{categories.length} {t('categoriesPage.count')}</span>
+                  </div>
+
+                  {/* 2-Col Desktop / 1-Col Mobile Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {categories.map((cat) => {
+                      const catSum = expenses.filter(e => e.catId === cat.id).reduce((s, e) => s + e.amount, 0);
+                      const hasSpent = catSum > 0;
+                      const pct = totalSpent > 0 ? Math.round((catSum / totalSpent) * 100) : 0;
+                      const displayName = cat.name || t(`categories.${cat.key}`);
+
+                      return (
+                        <div key={cat.id} className="bg-white rounded-[20px] p-4 shadow-sm border border-gray-100 space-y-3">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-11 h-11 rounded-full bg-[#EAF3DE] text-[#173404] flex items-center justify-center font-bold">
+                                {displayName[0]}
+                              </div>
+                              <span className="text-sm font-bold">{displayName}</span>
+                            </div>
+                            <div className="text-right">
+                              {hasSpent ? (
+                                <span className="text-sm font-bold text-[#173404] block">{formatAmount(convertVal(catSum), curr)}</span>
+                              ) : (
+                                <span className="text-xs text-gray-400 font-medium italic">{t('categoriesPage.noExpenses')}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div style={{ width: `${hasSpent ? pct : 0}%` }} className="h-full bg-[#90C749]" />
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* DISTINCT "+ ADD CATEGORY" CARD */}
+                    <div
+                      onClick={() => setShowAddCatModal(true)}
+                      className="bg-[#EAF3DE]/30 border-2 border-dashed border-[#C0DD97] hover:border-[#173404] rounded-[20px] p-4 flex items-center justify-center space-x-2 text-[#173404] font-semibold cursor-pointer min-h-[96px]"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-[#173404] text-[#EAF3DE] flex items-center justify-center font-bold">+</div>
+                      <span className="text-sm font-bold">{t('categoriesPage.addCard')}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'profile' && (
+                <div className="bg-white max-w-xl mx-auto rounded-[20px] p-6 shadow-sm border border-gray-100 space-y-4">
+                  <h3 className="text-sm font-bold text-[#173404]">{t('profilePage.title')}</h3>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold">{t('profilePage.displayCurrency')}</span>
+                    <div className="flex space-x-1">
+                      <button onClick={() => setCurr('KRW')} className={`px-3 py-1 text-xs font-bold rounded-lg ${curr === 'KRW' ? 'bg-[#173404] text-white' : 'bg-gray-100 text-gray-700'}`}>KRW (₩)</button>
+                      <button onClick={() => setCurr('USD')} className={`px-3 py-1 text-xs font-bold rounded-lg ${curr === 'USD' ? 'bg-[#173404] text-white' : 'bg-gray-100 text-gray-700'}`}>USD ($)</button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                    <span className="text-xs font-semibold">{t('profilePage.themeMode')}</span>
+                    <div className="flex space-x-1">
+                      <button onClick={() => setTheme('light')} className={`px-3 py-1 text-xs font-bold rounded-lg ${theme === 'light' ? 'bg-[#173404] text-white' : 'bg-gray-100 text-gray-700'}`}>☀️ Light</button>
+                      <button onClick={() => setTheme('dark')} className={`px-3 py-1 text-xs font-bold rounded-lg ${theme === 'dark' ? 'bg-[#173404] text-white' : 'bg-gray-100 text-gray-700'}`}>🌙 Dark</button>
+                    </div>
+                  </div>
+
+                  {/* ACTIVE CYCLE INFO */}
+                  {cycle && (
+                    <div className="bg-[#F7F9F4] rounded-xl p-4 space-y-3 border border-gray-200">
+                      <div className="text-xs font-bold text-[#173404]">{t('profilePage.currentCycle')}</div>
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        <div className="bg-white p-2 rounded-lg">
+                          <div className="text-gray-500">{t('profilePage.start')}</div>
+                          <div className="font-bold text-[#173404]">{cycle.startDate}</div>
+                        </div>
+                        <div className="bg-white p-2 rounded-lg">
+                          <div className="text-gray-500">{t('profilePage.end')}</div>
+                          <div className="font-bold text-[#173404]">{cycleEndDate}</div>
+                        </div>
+                        <div className="bg-white p-2 rounded-lg">
+                          <div className="text-gray-500">{t('profilePage.budget')}</div>
+                          <div className="font-bold text-[#173404]">{formatAmount(convertVal(cycle.totalAmount), curr)}</div>
+                        </div>
+                        <div className="bg-white p-2 rounded-lg">
+                          <div className="text-gray-500">{t('profilePage.daysLeft')}</div>
+                          <div className="font-bold text-[#173404]">{daysRemaining}</div>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => { setEditCycleAmountValue(formatInputAmount(cycle.totalAmount)); setShowEditCycleAmountModal(true); }}
+                          className="flex-1 py-2 bg-[#EAF3DE] hover:bg-[#C0DD97] text-[#173404] text-xs font-semibold rounded-xl transition-all"
+                        >
+                          {t('profilePage.editAmount')}
+                        </button>
+                        <button
+                          onClick={() => { setEditCycleEndValue(cycleEndDate); setShowEditCycleModal(true); }}
+                          className="flex-1 py-2 bg-[#EAF3DE] hover:bg-[#C0DD97] text-[#173404] text-xs font-semibold rounded-xl transition-all"
+                        >
+                          {t('profilePage.editEndDate')}
+                        </button>
+                        <button
+                          onClick={handleEndCycleEarly}
+                          className="flex-1 py-2 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold rounded-xl transition-all"
+                        >
+                          {t('profilePage.endEarly')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <button onClick={() => setShowCycleModal(true)} className="w-full py-2.5 bg-red-50 text-red-700 text-xs font-semibold rounded-xl font-bold">
+                    {t('profilePage.startNewCycle')}
+                  </button>
+
+                  {/* CYCLE HISTORY */}
+                  {cycleHistory.length > 0 && (
+                    <div className="space-y-3 pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs font-bold text-gray-700">{t('profilePage.historyTitle')} ({cycleHistory.length})</div>
+                        <span className="text-[10px] text-gray-400">{t('profilePage.tapToExpand')}</span>
+                      </div>
+                      <div className="space-y-2">
+                        {cycleHistory.slice().reverse().map((h, i) => {
+                          const itemKey = h.id || `hist-${i}`;
+                          const isExpanded = expandedHistoryId === itemKey;
+                          
+                          // Calculate end date
+                          const [sy, sm, sd] = (h.startDate || '2026-01-01').split('-').map(Number);
+                          const endDateObj = new Date(sy, sm - 1, sd + (h.days || 30));
+                          const endDateStr = endDateObj.toISOString().split('T')[0];
+
+                          // Expenses & stats
+                          const hExpenses = h.expenses || [];
+                          const hTotalSpent = hExpenses.reduce((s, e) => s + e.amount, 0);
+                          const hBalanceRemaining = (h.totalAmount || 0) - hTotalSpent;
+                          const hCurr = h.entryCurrency || 'KRW';
+
+                          return (
+                            <div key={itemKey} className="border border-gray-200 rounded-xl overflow-hidden transition-all bg-white shadow-xs group">
+                              {/* Clickable Header Row */}
+                              <div
+                                onClick={() => setExpandedHistoryId(isExpanded ? null : itemKey)}
+                                className="w-full flex items-center justify-between p-3 text-left hover:bg-[#F7F9F4] transition-colors cursor-pointer"
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <span className={`text-xs transition-transform ${isExpanded ? 'rotate-90' : ''}`}>▶</span>
+                                  <div>
+                                    <div className="text-xs font-bold text-[#173404]">
+                                      {h.startDate} → {endDateStr}
+                                    </div>
+                                    <div className="text-[10px] text-gray-500">
+                                      {h.days} days • {hExpenses.length} {hExpenses.length === 1 ? 'expense' : 'expenses'}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2.5">
+                                  <div className="text-right">
+                                    <div className="text-xs font-bold text-[#173404]">
+                                      {formatAmount(convertVal(h.totalAmount), curr)}
+                                    </div>
+                                    <div className="text-[10px] text-gray-400">
+                                      Spent: {formatAmount(convertVal(hTotalSpent), curr)}
+                                    </div>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleDeleteHistoryCycle(h.id, e)}
+                                    className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-bold rounded-lg transition-all flex items-center space-x-1 border border-red-200/60 shrink-0 ml-1"
+                                    title="Delete cycle"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                    <span>Delete</span>
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Expandable Details Body */}
+                              {isExpanded && (
+                                <div className="p-3 bg-[#F7F9F4] border-t border-gray-100 space-y-3 text-xs animate-fadeIn">
+                                  {/* Stats Summary Grid */}
+                                  <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100">
+                                      <div className="text-[10px] text-gray-400 uppercase">Budget</div>
+                                      <div className="font-bold text-[#173404]">{formatAmount(convertVal(h.totalAmount), curr)}</div>
+                                    </div>
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100">
+                                      <div className="text-[10px] text-gray-400 uppercase">Spent</div>
+                                      <div className="font-bold text-amber-700">{formatAmount(convertVal(hTotalSpent), curr)}</div>
+                                    </div>
+                                    <div className="bg-white p-2 rounded-lg border border-gray-100">
+                                      <div className="text-[10px] text-gray-400 uppercase">Remaining</div>
+                                      <div className="font-bold text-emerald-700">{formatAmount(convertVal(hBalanceRemaining), curr)}</div>
+                                    </div>
+                                  </div>
+
+                                  {/* Category Breakdown (reusing standard category bar structure) */}
+                                  <div className="bg-white p-3 rounded-lg border border-gray-100 space-y-2">
+                                    <div className="font-bold text-[#173404] text-[11px]">Category Spending</div>
+                                    {categories.map(cat => {
+                                      const catSum = hExpenses.filter(e => e.catId === cat.id).reduce((s, e) => s + e.amount, 0);
+                                      const pct = hTotalSpent > 0 ? Math.round((catSum / hTotalSpent) * 100) : 0;
+                                      const displayName = cat.name || t(`categories.${cat.key}`);
+                                      return (
+                                        <div key={cat.id} className="space-y-1">
+                                          <div className="flex justify-between text-[11px]">
+                                            <span className="text-gray-700">{displayName}</span>
+                                            <span className="font-semibold text-[#173404]">
+                                              {catSum > 0 ? `${formatAmount(convertVal(catSum), curr)} (${pct}%)` : '₩0'}
+                                            </span>
+                                          </div>
+                                          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                            <div style={{ width: `${catSum > 0 ? pct : 0}%` }} className="h-full bg-[#90C749]" />
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {/* Individual Expenses List (reusing expense list item design) */}
+                                  <div className="bg-white p-3 rounded-lg border border-gray-100 space-y-2">
+                                    <div className="font-bold text-[#173404] text-[11px]">Logged Expenses</div>
+                                    {hExpenses.length === 0 ? (
+                                      <div className="text-[10px] text-gray-400 italic">No expenses logged in this cycle</div>
+                                    ) : (
+                                      <div className="divide-y divide-gray-100">
+                                        {hExpenses.map(exp => {
+                                          const cat = categories.find(c => c.id === exp.catId) || INITIAL_CATS.find(c => c.id === exp.catId);
+                                          const iconMap = { utensils: '🍜', bus: '🚌', book: '📚', gamepad: '🎮', shopping: '🛒', receipt: '🧾', sparkles: '✨', more: '📦' };
+                                          const icon = iconMap[cat?.key] || '📦';
+                                          return (
+                                            <div key={exp.id} className="py-2 flex items-center justify-between">
+                                              <div className="flex items-center space-x-2">
+                                                <span className="text-sm">{icon}</span>
+                                                <div>
+                                                  <div className="font-semibold text-gray-800 text-[11px]">{exp.note || (cat?.name || t(`categories.${cat?.key}`))}</div>
+                                                  <div className="text-[9px] text-gray-400">{cat?.name || t(`categories.${cat?.key}`)}</div>
+                                                </div>
+                                              </div>
+                                              <span className="font-bold text-[#173404] text-[11px]">
+                                                -{formatAmount(convertVal(exp.amount), curr)}
+                                              </span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Delete Cycle Action Button */}
+                                  <div className="pt-1 flex justify-end">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => handleDeleteHistoryCycle(h.id, e)}
+                                      className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-xl transition-all flex items-center space-x-1.5 border border-red-200"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                      <span>Delete Cycle Record</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </main>
+
+            {/* ADD CUSTOM CATEGORY MODAL */}
+            {showAddCatModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div className="bg-white w-full max-w-md rounded-[24px] p-6 shadow-2xl space-y-4">
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <h3 className="text-base font-bold text-[#173404]">{t('categoriesPage.createTitle')}</h3>
+                    <button onClick={() => setShowAddCatModal(false)} className="text-gray-400 font-bold">✕</button>
+                  </div>
+                  <form onSubmit={handleAddCategory} className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold block mb-1">{t('categoriesPage.nameLabel')}</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder={t('categoriesPage.placeholder')}
+                        value={newCatName}
+                        onChange={(e) => setNewCatName(e.target.value)}
+                        className="w-full px-4 py-2.5 bg-[#F7F9F4] border rounded-xl font-bold text-sm text-[#173404]"
+                      />
+                    </div>
+                    <button type="submit" className="w-full py-3 bg-[#173404] text-[#EAF3DE] font-semibold rounded-xl shadow-lg text-sm">
+                      {t('categoriesPage.saveButton')}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* BLOCKING CYCLE SETUP MODAL — with custom cycle duration */}
+            {showCycleModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div className="bg-white w-full max-w-md rounded-[24px] p-6 shadow-2xl space-y-4">
+                  <div className="relative text-center space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowCycleModal(false)}
+                      className="absolute -right-1 -top-1 p-1 text-gray-400 hover:text-gray-700 font-bold text-lg leading-none transition-colors"
+                      title="Close"
+                    >
+                      ✕
+                    </button>
+                    <h3 className="text-lg font-bold text-[#173404] pr-6">{t('cycleSetup.title')}</h3>
+                    <p className="text-xs text-gray-600">{t('cycleSetup.blockingPrompt')}</p>
+                  </div>
+                  <form onSubmit={handleStartCycle} className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold block mb-1">{t('cycleSetup.amountLabel')}</label>
+                      <input
+                        type="number"
+                        required
+                        placeholder={curr === 'KRW' ? 'e.g. 450000' : 'e.g. 350'}
+                        value={setupAmount}
+                        onChange={(e) => setSetupAmount(e.target.value)}
+                        className="w-full px-4 py-3 bg-[#F7F9F4] border rounded-xl font-bold text-lg text-[#173404]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold block mb-1">{t('cycleSetup.startDateLabel')}</label>
+                      <input
+                        type="date"
+                        required
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="w-full px-3 py-2 bg-[#F7F9F4] border rounded-xl text-xs font-bold text-gray-800"
+                      />
+                    </div>
+
+                    {/* CUSTOM CYCLE DURATION — no fixed 7/14/30-day presets */}
+                    <div className="space-y-2 pt-1 border-t border-gray-100">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-gray-800">{t('cycleSetup.durationLabel')}</label>
+                        <div className="flex bg-[#F7F9F4] p-1 rounded-xl border border-gray-200 text-[11px]">
+                          <button
+                            type="button"
+                            onClick={() => setDurationMode('endDate')}
+                            className={`px-2.5 py-1 font-semibold rounded-lg transition-all ${
+                              durationMode === 'endDate'
+                                ? 'bg-[#173404] text-white shadow-xs'
+                                : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                          >
+                            {t('cycleSetup.nextIncomeDate')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDurationMode('customDays')}
+                            className={`px-2.5 py-1 font-semibold rounded-lg transition-all ${
+                              durationMode === 'customDays'
+                                ? 'bg-[#173404] text-white shadow-xs'
+                                : 'text-gray-600 hover:text-gray-900'
+                            }`}
+                          >
+                            {t('cycleSetup.customDays')}
+                          </button>
+                        </div>
+                      </div>
+
+                      {durationMode === 'endDate' && (
+                        <div className="space-y-1.5 bg-[#EAF3DE]/40 p-3 rounded-xl border border-[#C0DD97]">
+                          <label className="text-[11px] font-semibold text-[#173404] block">
+                            {t('cycleSetup.incomePrompt')}
+                          </label>
+                          <input
+                            type="date"
+                            required
+                            min={startDate}
+                            value={nextIncomeDate}
+                            onChange={(e) => setNextIncomeDate(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-[#C0DD97] rounded-lg text-xs font-bold text-[#173404]"
+                          />
+                        </div>
+                      )}
+
+                      {durationMode === 'customDays' && (
+                        <div className="space-y-1.5 bg-[#EAF3DE]/40 p-3 rounded-xl border border-[#C0DD97]">
+                          <label className="text-[11px] font-semibold text-[#173404] block">
+                            {t('cycleSetup.daysPrompt')}
+                          </label>
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            max="365"
+                            placeholder="e.g. 9 or 12"
+                            value={customDays}
+                            onChange={(e) => setCustomDays(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-[#C0DD97] rounded-lg text-xs font-bold text-[#173404]"
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between text-xs px-3 py-2 bg-[#173404] text-[#EAF3DE] rounded-xl font-medium">
+                        <span>{t('cycleSetup.calculatedLength')}</span>
+                        <span className="font-bold text-sm text-[#90C749]">
+                          {calculatedDays} {calculatedDays === 1 ? 'day' : 'days'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button type="submit" className="w-full py-3 bg-[#173404] text-[#EAF3DE] font-semibold rounded-xl shadow-lg text-sm">
+                      {t('cycleSetup.confirmButton')}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* EDIT CYCLE END DATE MODAL */}
+            {showEditCycleModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+                <div className="bg-white w-full max-w-md rounded-[24px] p-6 shadow-2xl space-y-4">
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <h3 className="text-base font-bold text-[#173404]">{t('cycleSetup.editEndTitle')}</h3>
+                    <button onClick={() => setShowEditCycleModal(false)} className="text-gray-400 font-bold">✕</button>
+                  </div>
+                  <form onSubmit={(e) => { e.preventDefault(); handleEditCycleEndDate(editCycleEndValue); }} className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold block mb-1">{t('cycleSetup.newEndLabel')}</label>
+                      <input
+                        type="date"
+                        required
+                        min={cycle?.startDate}
+                        value={editCycleEndValue}
+                        onChange={(e) => setEditCycleEndValue(e.target.value)}
+                        className="w-full px-4 py-3 bg-[#F7F9F4] border border-gray-200 rounded-xl font-bold text-sm text-[#173404]"
+                      />
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowEditCycleModal(false)}
+                        className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm"
+                      >
+                        {t('cycleSetup.cancel')}
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 py-3 bg-[#173404] text-[#EAF3DE] font-semibold rounded-xl shadow-lg text-sm"
+                      >
+                        {t('cycleSetup.saveEndButton')}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* EDIT CYCLE AMOUNT MODAL */}
+            {showEditCycleAmountModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+                <div className="bg-white w-full max-w-md rounded-[24px] p-6 shadow-2xl space-y-4">
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <h3 className="text-base font-bold text-[#173404]">{t('cycleSetup.editAmountTitle')}</h3>
+                    <button onClick={() => setShowEditCycleAmountModal(false)} className="text-gray-400 font-bold">✕</button>
+                  </div>
+                  <form onSubmit={(e) => { e.preventDefault(); handleEditCycleAmount(editCycleAmountValue); }} className="space-y-4">
+                    <div>
+                      <label className="text-xs font-semibold block mb-1">{t('cycleSetup.totalBudgetLabel')}</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#173404] font-bold text-lg">
+                          {curr === 'KRW' ? '₩' : '$'}
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          required
+                          placeholder="0"
+                          value={editCycleAmountValue}
+                          onChange={(e) => setEditCycleAmountValue(formatInputAmount(e.target.value))}
+                          className="w-full pl-10 pr-4 py-3 bg-[#F7F9F4] border border-gray-200 rounded-xl font-bold text-xl text-[#173404] focus:outline-none focus:ring-2 focus:ring-[#173404] transition-all"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowEditCycleAmountModal(false)}
+                        className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl text-sm"
+                      >
+                        {t('cycleSetup.cancel')}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!parseInputAmount(editCycleAmountValue)}
+                        className="flex-1 py-3 bg-[#173404] text-[#EAF3DE] font-semibold rounded-xl shadow-lg text-sm disabled:opacity-50"
+                      >
+                        {t('cycleSetup.saveAmountButton')}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {showExpenseModal && (
+              <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+                <div className="bg-white w-full max-w-md rounded-t-[28px] sm:rounded-[24px] p-6 shadow-2xl border border-emerald-950/10 space-y-5 animate-slideUp">
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className={`p-2 rounded-xl ${editingExpenseId ? 'bg-amber-50 text-amber-700' : 'bg-[#EAF3DE] text-[#173404]'}`}>
+                        <span className="text-lg">{editingExpenseId ? '✏️' : '+'}</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-[#173404]">{editingExpenseId ? 'Edit Expense' : t('expense.quickAddHeader')}</h3>
+                    </div>
+                    <button
+                      onClick={() => { setShowExpenseModal(false); setExpCat(''); setExpAmount(''); setExpNote(''); setEditingExpenseId(null); }}
+                      className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-lg font-bold"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleAddExpense} className="space-y-5">
+                    {/* STEP 1: Category Selector Grid */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-gray-700 block">{t('expense.categoryLabel')}</label>
+                      <div className="grid grid-cols-4 gap-3">
+                        {categories.map((cat) => {
+                          const isSelected = expCat === cat.id;
+                          const displayName = cat.name || t(`categories.${cat.key}`);
+                          // Category icon emoji map
+                          const iconMap = { utensils: '🍜', bus: '🚌', book: '📚', gamepad: '🎮', shopping: '🛒', receipt: '🧾', sparkles: '✨', more: '📦' };
+                          const icon = iconMap[cat.key] || '📦';
+                          return (
+                            <button
+                              type="button"
+                              key={cat.id}
+                              onClick={() => setExpCat(cat.id)}
+                              className="flex flex-col items-center space-y-1.5 group"
+                            >
+                              <div
+                                className={`w-13 h-13 rounded-full flex items-center justify-center text-xl transition-all ${
+                                  isSelected
+                                    ? 'bg-[#173404] text-white ring-[3px] ring-[#C0DD97] scale-110 shadow-lg'
+                                    : 'bg-[#EAF3DE] text-[#173404] hover:bg-[#C0DD97] hover:scale-105'
+                                }`}
+                                style={{ width: '52px', height: '52px' }}
+                              >
+                                {icon}
+                              </div>
+                              <span
+                                className={`text-[10px] font-medium text-center leading-tight w-full truncate ${
+                                  isSelected ? 'text-[#173404] font-bold' : 'text-gray-500'
+                                }`}
+                              >
+                                {displayName}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {!expCat && (
+                        <p className="text-[10px] text-gray-400 italic">{t('expense.tapHint')}</p>
+                      )}
+                    </div>
+
+                    {/* STEP 2: Amount Input with live dot formatting */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-gray-700 block">{t('expense.amountLabel')}</label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#173404] font-bold text-xl">
+                          {curr === 'KRW' ? '₩' : '$'}
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="0"
+                          value={expAmount}
+                          onChange={(e) => setExpAmount(formatInputAmount(e.target.value))}
+                          className="w-full pl-10 pr-4 py-3 bg-[#F7F9F4] border border-gray-200 rounded-xl font-bold text-2xl text-[#173404] focus:outline-none focus:ring-2 focus:ring-[#173404] transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* STEP 3: Optional Note */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-gray-700 block">{t('expense.noteLabel')}</label>
+                      <input
+                        type="text"
+                        placeholder={t('expense.notePlaceholder')}
+                        value={expNote}
+                        onChange={(e) => setExpNote(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-[#F7F9F4] border border-gray-200 rounded-xl text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#173404] transition-all"
+                      />
+                    </div>
+
+                    {/* STEP 4: Submit — disabled until category + amount filled */}
+                    <button
+                      type="submit"
+                      disabled={!expCat || !parseInputAmount(expAmount)}
+                      className={`w-full py-3.5 font-semibold rounded-xl shadow-lg text-sm transition-all flex items-center justify-center space-x-2 ${
+                        expCat && parseInputAmount(expAmount)
+                          ? 'bg-[#173404] hover:bg-[#234a08] text-[#EAF3DE] cursor-pointer'
+                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <span>{t('expense.saveButton')}</span>
+                      {expCat && parseInputAmount(expAmount) > 0 && (
+                        <span className="text-xs opacity-70">({formatAmount(parseInputAmount(expAmount), curr)})</span>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden max-w-md mx-auto px-4 pb-4">
+              <div className="bg-[#173404] text-white rounded-full shadow-2xl p-2 flex items-center justify-around">
+                <button onClick={() => setActiveTab('home')} className={`text-xs font-semibold px-4 py-1.5 rounded-full ${activeTab === 'home' ? 'bg-[#90C749] text-[#173404]' : 'text-white/80'}`}>
+                  {t('nav.home')}
+                </button>
+                <button onClick={() => setShowExpenseModal(true)} className="w-12 h-12 bg-[#90C749] text-[#173404] rounded-full flex items-center justify-center font-bold text-xl shadow-lg -mt-5 border-4 border-[#F7F9F4]">
+                  +
+                </button>
+                <button onClick={() => setActiveTab('profile')} className={`text-xs font-semibold px-4 py-1.5 rounded-full ${activeTab === 'profile' ? 'bg-[#90C749] text-[#173404]' : 'text-white/80'}`}>
+                  {t('nav.profile')}
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
