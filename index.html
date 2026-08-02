@@ -317,6 +317,7 @@
         profilePage: {
           title: "Settings & Preferences",
           displayCurrency: "Display Currency",
+          themeMode: "App Theme",
           currentCycle: "Current Cycle",
           start: "Start",
           end: "End",
@@ -432,6 +433,7 @@
         profilePage: {
           title: "Sozlamalar va Afzalliklar",
           displayCurrency: "Displey Valyutasi",
+          themeMode: "Ilova Mavzusi",
           currentCycle: "Joriy Tsikl",
           start: "Boshlanishi",
           end: "Tugashi",
@@ -1128,8 +1130,15 @@
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold">{t('profilePage.displayCurrency')}</span>
                     <div className="flex space-x-1">
-                      <button onClick={() => setCurr('KRW')} className={`px-3 py-1 text-xs font-bold rounded-lg ${curr === 'KRW' ? 'bg-[#173404] text-white' : 'bg-gray-100'}`}>KRW (₩)</button>
-                      <button onClick={() => setCurr('USD')} className={`px-3 py-1 text-xs font-bold rounded-lg ${curr === 'USD' ? 'bg-[#173404] text-white' : 'bg-gray-100'}`}>USD ($)</button>
+                      <button onClick={() => setCurr('KRW')} className={`px-3 py-1 text-xs font-bold rounded-lg ${curr === 'KRW' ? 'bg-[#173404] text-white' : 'bg-gray-100 text-gray-700'}`}>KRW (₩)</button>
+                      <button onClick={() => setCurr('USD')} className={`px-3 py-1 text-xs font-bold rounded-lg ${curr === 'USD' ? 'bg-[#173404] text-white' : 'bg-gray-100 text-gray-700'}`}>USD ($)</button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                    <span className="text-xs font-semibold">{t('profilePage.themeMode')}</span>
+                    <div className="flex space-x-1">
+                      <button onClick={() => setTheme('light')} className={`px-3 py-1 text-xs font-bold rounded-lg ${theme === 'light' ? 'bg-[#173404] text-white' : 'bg-gray-100 text-gray-700'}`}>☀️ Light</button>
+                      <button onClick={() => setTheme('dark')} className={`px-3 py-1 text-xs font-bold rounded-lg ${theme === 'dark' ? 'bg-[#173404] text-white' : 'bg-gray-100 text-gray-700'}`}>🌙 Dark</button>
                     </div>
                   </div>
 
